@@ -595,17 +595,12 @@
       <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
         <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">response body — ის, რაც ქსელიდან მოვიდა</p>
       </div>
-      <pre class="scroll overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span data-j="0" class="j-line">{</span>
+      <pre class="scroll overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.65] text-[#d4d4d4]"><code><span data-j="0" class="j-line">{</span>
 <span data-j="0" class="j-line">  <span class="text-[#9cdcfe]">"success"</span>: <span class="text-[#569cd6]">true</span>,</span>
 <span data-j="1" class="j-line">  <span class="text-[#9cdcfe]">"data"</span>: {</span>
 <span data-j="1" class="j-line">    <span class="text-[#9cdcfe]">"total"</span>: <span class="text-[#b5cea8]">124</span>,</span>
 <span data-j="2" class="j-line">    <span class="text-[#9cdcfe]">"products"</span>: [</span>
-<span data-j="2" class="j-line">      {</span>
-<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"id"</span>: <span class="text-[#b5cea8]">1</span>,</span>
-<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"მარგარიტა"</span>,</span>
-<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"price"</span>: <span class="text-[#b5cea8]">18.5</span>,</span>
-<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"image"</span>: <span class="text-[#ce9178]">"https://…/margarita.jpg"</span></span>
-<span data-j="2" class="j-line">      },</span>
+<span data-j="2" class="j-line">      { <span class="text-[#9cdcfe]">"id"</span>: <span class="text-[#b5cea8]">1</span>, <span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"მარგარიტა"</span>, <span class="text-[#9cdcfe]">"price"</span>: <span class="text-[#b5cea8]">18.5</span>, <span class="text-[#9cdcfe]">"image"</span>: <span class="text-[#ce9178]">"https://…/margarita.jpg"</span> },</span>
 <span data-j="2" class="j-line">      { <span class="text-[#9cdcfe]">"id"</span>: <span class="text-[#b5cea8]">2</span>, <span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"ლაზანია"</span>, <span class="text-[#9cdcfe]">"price"</span>: <span class="text-[#b5cea8]">24</span> }</span>
 <span data-j="2" class="j-line">    ]</span>
 <span data-j="1" class="j-line">  }</span>
@@ -683,17 +678,17 @@
   <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" id="asyncLab">
     <div class="col-span-5 flex flex-col">
       <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ასინქრონულობა</p>
-      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ჩეკი ჯერ,<br>ყავა მერე</h2>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ჯერ დაპირება,<br>ყავა მერე</h2>
 
       <p class="mt-6 leading-relaxed text-ink-2">
-        კაფეში შეკვეთისას ყავას მაშინვე არ გაძლევენ — გაძლევენ <b class="text-ink">ჩეკს</b>.
-        ჩეკი ყავა არ არის, მაგრამ ის დაპირებაა, რომ ყავა იქნება. და სანამ ელოდები,
-        არავინ კეტავს კაფეს — სხვები აგრძელებენ შეკვეთას.
+        კაფეში შეკვეთისას ყავას მაშინვე არ გაძლევენ — გაძლევენ <b class="text-ink">დაპირებას</b>.
+        დაპირებას ყავა არ არის, მაგრამ მოგვიანებით იქნება. და სანამ ელოდები,
+        არავინ კეტავს კაფეს - სხვები აგრძელებენ შეკვეთას.
       </p>
 
       <div class="mt-6 grid gap-px bg-rule">
         <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">Promise</p><p class="mt-1 text-sm text-ink-2">ჩეკი. ობიექტი, რომელიც ამბობს „შედეგი მოგვიანებით იქნება“.</p></div>
-        <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">await</p><p class="mt-1 text-sm text-ink-2">„ვდგები დახლთან, სანამ არ მომიტანენ“ — მაგრამ მხოლოდ ეს ფუნქცია დგება, აპლიკაცია არა.</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">await</p><p class="mt-1 text-sm text-ink-2">„ვდგები დახლთან, სანამ არ მომიტანენ“ </p></div>
         <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">async</p><p class="mt-1 text-sm text-ink-2">ფუნქციის ნიშანი, რომ მასში ლოდინი შეიძლება.</p></div>
       </div>
 
@@ -736,7 +731,7 @@
   <div class="flex h-full flex-col px-14 py-12">
     <div class="flex items-end justify-between border-b border-rule pb-4">
       <div>
-        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ორი ჩაწერა</p>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ორი სინტაქსი</p>
         <h2 class="display mt-3 text-5xl font-semibold"><code class="font-mono">.then()</code> და <code class="font-mono">await</code> — ერთი და იგივე</h2>
       </div>
       <p class="max-w-sm text-right text-sm text-ink-2">ორივე Promise-ს ელოდება. განსხვავება მხოლოდ იმაშია, თუ როგორ იკითხება ის, რაც შემდეგ ხდება.</p>
