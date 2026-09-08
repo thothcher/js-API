@@ -1,0 +1,2422 @@
+<!doctype html>
+<html lang="ka" class="scroll-smooth">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>API — ლექცია</title>
+<meta name="description" content="ლექციის სლაიდები API-ზე: HTTP, fetch, async/await, CRUD. გახსენით DevTools → Network." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e33e0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h14l-4-4'/%3E%3Cpath d='M21 16H7l4 4'/%3E%3C/svg%3E" />
+
+<!-- Tailwind v4, პირდაპირ ბრაუზერში. build step-ის გარეშე, განზრახ:
+     ეს ფაილი ერთი ცალკე დგას — გახსენი ორმაგი დაწკაპუნებით, სერვერი არ სჭირდება. -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style type="text/tailwindcss">
+  @theme {
+    --color-paper:   #e7eae9;
+    --color-panel:   #f3f5f4;
+    --color-ink:     #14171a;
+    --color-ink-2:   #4a5157;
+    --color-rule:    #c3cac9;
+    --color-live:    #1e33e0;
+    /* HTTP მეთოდების ფერები — იგივე კოდი, რასაც Postman/Swagger იყენებს:
+       ფერი მეთოდის მნიშვნელობას ატარებს, არა დეკორაციას. */
+    --color-get:     #2e7d4f;
+    --color-post:    #1f6fb2;
+    --color-put:     #b4741f;
+    --color-del:     #b3352c;
+    --font-display:  "Noto Serif Georgian", Georgia, serif;
+    --font-sans:     "Noto Sans Georgian", ui-sans-serif, system-ui, sans-serif;
+    --font-mono:     "IBM Plex Mono", "Noto Sans Georgian", ui-monospace, monospace;
+  }
+</style>
+
+<style>
+  /* ერთადერთი ხელით დაწერილი CSS ამ ფაილში — თითოეული წესი აქ იმიტომაა, რომ ბევრ უცნობ ელემენტს ეხება. */
+  html, body { height: 100%; }
+  body {
+    background: #e7eae9; color: #14171a;
+    font-family: "Noto Sans Georgian", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .display { font-family: "Noto Serif Georgian", Georgia, serif; letter-spacing: -0.02em; }
+  .grid-paper {
+    background-image: radial-gradient(#14171a12 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  pre::-webkit-scrollbar, .scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  pre::-webkit-scrollbar-thumb, .scroll::-webkit-scrollbar-thumb { background: #c3cac9; border-radius: 8px; }
+  .slide { display: none; }
+  .slide.is-active { display: block; overflow: auto; animation: rise .18s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .slide.is-active { animation: none; } }
+
+  /* flip-card: დარბაზი ჯერ პასუხობს, დაწკაპუნება ხსნის სწორ პასუხს */
+  .flip-card { perspective: 1400px; overflow: hidden; }
+  .flip-inner { display: grid; transition: transform .6s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+  .flip-front, .flip-back { grid-area: 1 / 1; backface-visibility: hidden; }
+  .flip-back { transform: rotateX(180deg); }
+  .flip-card.is-flipped .flip-inner { transform: rotateX(180deg); }
+  @media (prefers-reduced-motion: reduce) { .flip-inner { transition: none; } }
+
+  /* x-ray inspector */
+  body.xray [class]:hover { outline: 1px solid #1e33e0; outline-offset: 2px; cursor: crosshair; }
+
+  mark { background: #1e33e01f; color: inherit; padding: 0 .15em; border-radius: 2px; }
+
+  /* პროგრესული კოდის ჩვენება: თითო ხაზი ჩნდება თავის ნაბიჯზე */
+  .cl { display: block; transition: background-color .25s ease; border-left: 2px solid transparent; padding-left: 10px; margin-left: -12px; }
+  .cl[hidden] { display: none; }
+  .cl.is-new { background: #1e33e026; border-left-color: #6f86ff; }
+
+  /* მოთხოვნა → პასუხი ანიმაცია */
+  @keyframes flyRight { from { transform: translateX(0); opacity: 0 } 15% { opacity: 1 } to { transform: translateX(var(--fly, 220px)); opacity: 1 } }
+  @keyframes flyLeft  { from { transform: translateX(var(--fly, 220px)); opacity: 0 } 15% { opacity: 1 } to { transform: translateX(0); opacity: 1 } }
+  .fly-req { animation: flyRight 1s cubic-bezier(.4,.1,.2,1) both; }
+  .fly-res { animation: flyLeft  1s cubic-bezier(.4,.1,.2,1) both; }
+  @media (prefers-reduced-motion: reduce) { .fly-req, .fly-res { animation: none; } }
+  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 #1e33e055 } 70% { box-shadow: 0 0 0 14px #1e33e000 } 100% { box-shadow: 0 0 0 0 #1e33e000 } }
+  .thinking { animation: pulseRing 1.1s ease-out infinite; }
+
+  /* ლოგის ხაზები ასინქრონულ დემოში */
+  @keyframes logIn { from { opacity: 0; transform: translateY(-4px) } to { opacity: 1; transform: none } }
+  .log-line { animation: logIn .2s ease-out both; }
+
+  /* ინტერაქციული ლაბორატორიების ღილაკები — ერთი და იგივე წესი ბევრ ელემენტზე,
+     ამიტომ უტილიტების ნაცვლად კლასი. */
+  .url-btn, .c-btn, .m-btn {
+    border: 1px solid #c3cac9; background: #f3f5f4; cursor: pointer;
+    font-family: "IBM Plex Mono", monospace; transition: border-color .15s, background-color .15s, color .15s;
+  }
+  .url-btn { padding: 7px 13px; font-size: 12px; }
+  .url-btn:hover, .c-btn:hover, .m-btn:hover { border-color: #14171a; }
+  .url-btn.is-on { background: #14171a; color: #e7eae9; border-color: #14171a; }
+
+  .c-btn { padding: 13px 0; font-size: 15px; text-align: center; }
+  .c-btn.is-on { background: #14171a; color: #e7eae9; border-color: #14171a; }
+
+  .m-btn { display: flex; align-items: center; gap: 14px; padding: 13px 16px; text-align: left; font-family: inherit; font-size: 15px; }
+  .m-btn.is-on { border-width: 2px; background: #e7eae9; font-weight: 600; }
+  .m-tag { width: 5rem; flex-shrink: 0; font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .12em; }
+
+  .j-btn { border: 0; border-bottom: 2px solid #c3cac9; background: none; padding: 0 6px; cursor: pointer; font-family: inherit; font-size: inherit; color: inherit; transition: color .15s, border-color .15s; }
+  .j-btn.is-on { border-bottom-color: #1e33e0; color: #1e33e0; }
+  .j-line { display: block; opacity: .3; transition: opacity .25s, background-color .25s; }
+  .j-line.is-on { opacity: 1; background: #1e33e01f; }
+</style>
+</head>
+
+<body class="grid-paper antialiased text-ink selection:bg-live/30 selection:text-ink">
+
+<div class="fixed inset-x-0 top-0 z-50 h-[3px] bg-rule/40">
+  <div id="bar" class="h-full w-0 bg-ink transition-[width] duration-300 ease-out"></div>
+</div>
+
+<main id="deck" class="h-screen w-screen pt-[3px] pb-11">
+
+<!-- 01 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="სათაური" data-notes="დაიწყე ერთი კითხვით: დღეს რამდენჯერ ისარგებლეთ API-ით? პასუხი: ყოველ ჯერზე, როცა ამინდი ნახეთ, ტაქსი გამოიძახეთ ან გადარიცხვა გააკეთეთ. აწიონ ხელი ვინც ფიქრობს, რომ არასდროს — და მერე დაუთვალე.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-start justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">
+      <span>ლექცია · frontend</span>
+      <span>დასაწყებად დააჭირეთ <kbd class="border border-rule bg-panel px-1.5 py-0.5">→</kbd></span>
+    </div>
+
+    <div class="flex flex-1 flex-col justify-center">
+      <div class="flex items-center gap-x-[3vw]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-[7vw] w-auto shrink-0 text-live" aria-hidden="true">
+          <path d="M3 8h14l-4-4"/><path d="M21 16H7l4 4"/>
+        </svg>
+        <h1 class="display text-[9vw] leading-[0.9] font-semibold">API</h1>
+      </div>
+      <p class="display mt-8 text-[2.6vw] leading-tight text-ink-2">როგორ ელაპარაკება<br>ერთი პროგრამა მეორეს</p>
+      <div class="mt-8 h-px w-32 bg-live/40"></div>
+      <div class="mt-8 flex flex-wrap gap-x-8 gap-y-2 font-mono text-[12px] uppercase tracking-[0.15em]">
+        <span class="text-get">get</span>
+        <span class="text-post">post</span>
+        <span class="text-put">put / patch</span>
+        <span class="text-del">delete</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="გეგმა" data-notes="60 წამი, არა მეტი. მთავარია თქვა: ლექციის ნახევარი ცოცხალია — DevTools → Network გახსნილი უნდა ჰქონდეთ მთელი დროის განმავლობაში. ბოლოს 5 დავალებაა.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5 flex flex-col justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>გეგმა</p>
+        <h2 class="display mt-4 text-6xl leading-[1] font-semibold">რაზე<br>ვისაუბრებთ?</h2>
+      </div>
+      <div class="border-l-2 border-live pl-5 text-ink-2">
+        <p>ერთი წინადადება, რომელსაც მთელი ლექცია ემსახურება:</p>
+        <p class="mt-2 text-lg leading-snug text-ink">API არის <mark>შეთანხმება</mark> — მისამართების სია და წესები, თუ როგორ ითხოვ ინფორმაციის გაგზავნა-მოტანას.</p>
+      </div>
+    </div>
+
+    <ol class="col-span-7 grid content-center gap-px bg-rule">
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">01</span><span>რა არის API და რატომ არ არის ეს ბიბლიოთეკა</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">02</span><span>HTTP მოთხოვნის ანატომია: მეთოდი, URL, header, body</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">03</span><span>GET · POST · PUT · PATCH · DELETE — და სტატუს კოდები</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">04</span><span><code class="font-mono text-[13px]">fetch()</code>, Promise, <code class="font-mono text-[13px]">async / await</code> — ინტერაქციულად</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">05</span><span>შეცდომების დამუშავება და ის ერთი ხაფანგი, რომელშიც ყველა ვვარდებით</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">06</span><span>სრული CRUD dashboard — ჩვენივე <code class="font-mono text-[13px]">dashboard.js</code>-ის მიხედვით</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">07</span><span>API key, CORS, უსაფრთხოება — რა ჩანს ბრაუზერში</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">08</span><span>5 დავალება რეალური სცენარებით</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 03 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ანალოგია" data-notes="ეს არის ლექციის მთავარი სურათი — დაუბრუნდი მას ყოველ რთულ ადგილას. იკითხე დარბაზს: მიმტანი ამზადებს საჭმელს? არა. იცის რეცეპტი? არა. მაშინ რას აკეთებს? გადააქვს შეკვეთა და მოაქვს შედეგი. ზუსტად ესაა API. ხაზი გაუსვი: ჩვენი პროექტის API ნამდვილად რესტორნისაა.">
+  <div class="flex h-full flex-col px-14 py-10">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>რეალური ცხოვრება</p>
+        <h2 class="display mt-3 text-5xl font-semibold">მიმტანი არის API</h2>
+      </div>
+      <p class="max-w-md text-right text-sm text-ink-2">შენ სამზარეულოში არ შედიხარ. არც გჭირდება. შენ იცი მხოლოდ ის, რაც მენიუშია დაწერილი.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-3 items-center gap-8 py-8">
+      <div class="border border-rule bg-panel p-7">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">შენ · მაგიდასთან</p>
+        <p class="display mt-3 text-3xl font-semibold">კლიენტი</p>
+        <p class="mt-4 text-ink-2">ბრაუზერი, მობილური აპლიკაცია, ჩვენი <code class="font-mono text-[13px]">index.html</code>.</p>
+        <p class="mt-4 border-t border-rule pt-4 text-sm">იცის: <span class="text-ink-2">რა უნდა.</span><br>არ იცის: <span class="text-ink-2">როგორ კეთდება.</span></p>
+      </div>
+
+      <div class="relative flex flex-col items-center">
+        <svg viewBox="0 0 200 24" class="w-full text-live" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12h180" stroke-dasharray="4 4"/><path d="m176 6 8 6-8 6"/></svg>
+        <div class="my-4 w-full border-2 border-live bg-paper p-6 text-center">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">მიმტანი</p>
+          <p class="display mt-2 text-3xl font-semibold">API</p>
+          <p class="mt-3 text-sm text-ink-2">იღებს შეკვეთას გასაგები ფორმით, აბრუნებს შედეგს გასაგები ფორმით.</p>
+          <p class="mt-3 border-t border-rule pt-3 font-mono text-[12px] text-ink">/api/products</p>
+        </div>
+        <svg viewBox="0 0 200 24" class="w-full rotate-180 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12h180" stroke-dasharray="4 4"/><path d="m176 6 8 6-8 6"/></svg>
+      </div>
+
+      <div class="border border-rule bg-panel p-7">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">სამზარეულო</p>
+        <p class="display mt-3 text-3xl font-semibold">სერვერი + ბაზა</p>
+        <p class="mt-4 text-ink-2">იქ არის რეცეპტები, პროდუქტები, ფასები — და შენ იქ ვერ შეხვალ.</p>
+        <p class="mt-4 border-t border-rule pt-4 text-sm">იცის: <span class="text-ink-2">როგორ კეთდება.</span><br>არ იცის: <span class="text-ink-2">ვინ და რატომ ითხოვს.</span></p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-4 gap-px border-t border-rule bg-rule">
+      <div class="bg-paper p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">მენიუ</p><p class="mt-1 text-sm">დოკუმენტაცია — რის თხოვნა შეიძლება</p></div>
+      <div class="bg-paper p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">შეკვეთა</p><p class="mt-1 text-sm">Request — მეთოდი + მისამართი</p></div>
+      <div class="bg-paper p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">კერძი</p><p class="mt-1 text-sm">Response — JSON მონაცემები</p></div>
+      <div class="bg-paper p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">„ეს დღეს არ გვაქვს“</p><p class="mt-1 text-sm">შეცდომა — 404, 500</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="განმარტება" data-notes="აქ მთავარია ის, რაც API არ არის. ხშირი შეცდომა: ფიქრობენ, რომ API ბიბლიოთეკაა, რომელსაც აინსტალირებ. არა — ის სხვის კომპიუტერზე მუშაობს და შენ მხოლოდ მისამართებს იცნობ. აჩვენე მარჯვნივ სამი ნაბიჯი და თქვი: სამივეს შორის ინტერნეტია, ესე იგი დრო და შეცდომის შანსი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>განმარტება</p>
+      <h2 class="display mt-4 text-6xl leading-[1] font-semibold">რა არის API<br>რეალურად</h2>
+      <p class="mt-6 text-lg leading-relaxed text-ink-2">
+        <b class="text-ink">A</b>pplication <b class="text-ink">P</b>rogramming <b class="text-ink">I</b>nterface.
+        სამივე სიტყვა მნიშვნელოვანია, მაგრამ მთავარი მაინც ბოლოა: <span class="text-live">ინტერფეისი</span>.
+      </p>
+      <p class="mt-4 text-lg leading-relaxed">
+        ინტერფეისი არის ის ზედაპირი, რომელსაც ეხები, როცა შიგნით ვერ იხედები.
+        ავტომობილის საჭე ინტერფეისია — არ გჭირდება იცოდე, როგორ მუშაობს ძრავა.
+      </p>
+      <div class="mt-8 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">API არ არის</p>
+        <ul class="mt-3 space-y-1.5 text-[15px] text-ink-2">
+          <li>— ბიბლიოთეკა, რომელსაც <code class="font-mono text-[13px]">npm install</code>-ით იღებ</li>
+          <li>— ბაზა, რომელშიც პირდაპირ წერ</li>
+          <li>— ფაილი შენს პროექტში</li>
+        </ul>
+        <p class="mt-3 border-t border-rule pt-3 text-[15px]">ის სხვა სერვერზე მუშაობს. შენ მხოლოდ <b>მისამართები</b> და <b>წესები</b> იცი.</p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6">
+      <div class="grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">1</span>request</p>
+          <p class="mt-3 font-medium">კლიენტი აგზავნის მოთხოვნას</p>
+          <p class="mt-2 text-sm text-ink-2">„მომეცი ყველა პროდუქტი“. მისამართი + მეთოდი + საიდენტიფიკაციო header-ები.</p>
+        </div>
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">2</span>process</p>
+          <p class="mt-3 font-medium">სერვერი ამოწმებს და ასრულებს</p>
+          <p class="mt-2 text-sm text-ink-2">ვინ ხარ? გაქვს უფლება? არსებობს ეს რესურსი? მერე მიმართავს ბაზას.</p>
+        </div>
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">3</span>response</p>
+          <p class="mt-3 font-medium">პასუხი ბრუნდება ტექსტად</p>
+          <p class="mt-2 text-sm text-ink-2">სტატუს კოდი + JSON. ბრაუზერს ობიექტი კი არ მოსდის, ტექსტი — რომელსაც ჩვენ ვშლით.</p>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-6 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">რაზეც ხშირად არავინ საუბრობს</p>
+        <p class="mt-3 text-lg leading-relaxed">
+          ამ სამ ნაბიჯს შორის <span class="text-[#8ad3a4]">დრო</span> დგას — 50 მილიწამი ან 4 წამი, ან საერთოდ უსასრულობა.
+          სწორედ ამიტომ არის API-ს კოდი <span class="text-[#8ad3a4]">ასინქრონული</span>, და სწორედ ამიტომ
+          სჭირდება ყოველ ფუნქციას პასუხი კითხვაზე: „და თუ არ მოვიდა?“
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ანატომია" data-notes="შეანელე. როგორც კი მოთხოვნის ოთხ ნაწილს ერთმანეთისგან გაარჩევენ, ყველაფერი დანარჩენი ლექსიკონია. აჩვენე იგივე ოთხი ნაწილი DevTools → Network → Headers-ში ცოცხლად. ხაზი გაუსვი: GET-ს body არ აქვს — ეს ხშირი შეცდომაა.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ანატომია</p>
+    <h2 class="display mt-3 text-5xl font-semibold">მოთხოვნის ოთხი ნაწილი</h2>
+
+    <div class="mt-10 flex flex-wrap items-end gap-x-3 gap-y-2 font-mono text-[clamp(1rem,2.2vw,1.8rem)]">
+      <span class="border-b-2 border-get px-2">POST</span>
+      <span class="border-b-2 border-live px-2">https://api.example.ge/cars</span>
+      <span class="border-b-2 border-put px-2">x-api-key: …</span>
+      <span class="border-b-2 border-post px-2">{ "name": "Ferrari" }</span>
+    </div>
+
+    <div class="mt-8 grid grid-cols-4 gap-8 text-sm">
+      <div>
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">მეთოდი · ზმნა</p>
+        <p class="mt-2 text-ink-2">რა უნდა გააკეთო რესურსთან. წაიკითხო, დაამატო, შეცვალო თუ წაშალო.</p>
+        <p class="mt-2 text-ink">ცხოვრებაში: <span class="text-ink-2">„მაჩვენე“ თუ „წაიღე“.</span></p>
+      </div>
+      <div>
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-live">URL · მისამართი</p>
+        <p class="mt-2 text-ink-2">რომელ რესურსზე. ერთი კონკრეტული თარო კონკრეტულ საწყობში.</p>
+        <p class="mt-2 text-ink">ცხოვრებაში: <span class="text-ink-2">ქუჩა და სახლის ნომერი.</span></p>
+      </div>
+      <div>
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-put">Headers · მეტამონაცემები</p>
+        <p class="mt-2 text-ink-2">ვინ ვარ, რა ფორმატს ველოდები, რა ფორმატს ვგზავნი.</p>
+        <p class="mt-2 text-ink">ცხოვრებაში: <span class="text-ink-2">კონვერტზე დაწერილი გამგზავნი.</span></p>
+      </div>
+      <div>
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-post">Body · ტვირთი</p>
+        <p class="mt-2 text-ink-2">თავად მონაცემები, რომელსაც აგზავნი. მხოლოდ POST / PUT / PATCH-ს აქვს.</p>
+        <p class="mt-2 text-ink">ცხოვრებაში: <span class="text-ink-2">წერილი კონვერტის შიგნით.</span></p>
+      </div>
+    </div>
+
+    <div class="mt-8 grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-5 py-2.5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">როგორ გამოიყურება ის ქსელში</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.8] text-[#d4d4d4]"><code><span class="text-[#c586c0]">POST</span> <span class="text-[#ce9178]">/cars</span> <span class="text-[#569cd6]">HTTP/1.1</span>
+<span class="text-[#9cdcfe]">Host</span>: api.example.ge
+<span class="text-[#9cdcfe]">Content-Type</span>: <span class="text-[#ce9178]">application/json</span>
+<span class="text-[#9cdcfe]">x-api-key</span>: <span class="text-[#ce9178]">13e8bfec-03fb-…</span>
+
+{<span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"Ferrari 250 GTO"</span>, <span class="text-[#9cdcfe]">"year"</span>: <span class="text-[#b5cea8]">1963</span>}</code></pre>
+      </div>
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-5 py-2.5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">როგორ ვწერთ ჩვენ — იგივე ოთხი ნაწილი</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.8] text-[#d4d4d4]"><code><span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">'https://api.example.ge/cars'</span>, {
+  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'POST'</span>,
+  <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'Content-Type'</span>: <span class="text-[#ce9178]">'application/json'</span> },
+  <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>(car),
+});</code></pre>
+        <div class="border-t border-rule px-5 py-3 text-xs text-ink-2">
+          პირველი არგუმენტი — მისამართი. მეორე — დანარჩენი სამივე ნაწილი, ერთ ობიექტში.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="URL" data-notes="ეს სლაიდი ინტერაქციულია — ჩართე და გამორთე ფილტრები და ერთად უყურეთ, როგორ იცვლება მისამართი და შედეგების რაოდენობა. მთავარი აზრი: query parameter არ ცვლის რესურსს, ის მხოლოდ ავიწროებს პასუხს. კითხვა დარბაზს: რომელი ნაწილი უნდა შეიცვალოს, თუ ერთი კონკრეტული პროდუქტი გვინდა?">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>მისამართი</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">URL იკითხება<br>მარცხნიდან<br>მარჯვნივ</h2>
+
+      <div class="mt-8 space-y-4 text-[15px]">
+        <div class="flex gap-4"><span class="w-28 shrink-0 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-2">protocol</span><span><code class="font-mono text-live">https://</code><span class="text-ink-2"> - <strong> Hypertext Transfer Protocol Secure.</strong></span> - დაშიფრული კავშირი. </span></div>
+        <div class="flex gap-4"><span class="w-28 shrink-0 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-2">host</span><span><code class="font-mono text-live">restaurantapi.stepacademy.ge</code> — <span class="text-ink-2">რომელი სერვერი.</span></span></div>
+        <div class="flex gap-4"><span class="w-28 shrink-0 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-2">path</span><span><code class="font-mono text-live">/api/products</code> — <span class="text-ink-2">რომელი რესურსი. მრავლობითი რიცხვი სტანდარტია.</span></span></div>
+        <div class="flex gap-4"><span class="w-28 shrink-0 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-2">query</span><span><code class="font-mono text-live">?category=pizza</code> — <span class="text-ink-2">ფილტრი, დახარისხება, გვერდი. იწყება <code class="font-mono">?</code>-ით, გრძელდება <code class="font-mono">&amp;</code>-ით.</span></span></div>
+      </div>
+
+      <div class="mt-auto border-l-2 border-live pl-5">
+        <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">ბიბლიოთეკის თარო არის path. „მხოლოდ ქართული, მხოლოდ 2020-ის შემდეგ“ არის query.</span></p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6" id="urlLab">
+      <div class="border border-rule bg-panel p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">ჩართე ფილტრები და დააკვირდი მისამართს როგორ იცვლება</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button data-q="category=pizza" class="url-btn">category=pizza</button>
+          <button data-q="minPrice=10" class="url-btn">minPrice=10</button>
+          <button data-q="sort=price" class="url-btn">sort=price</button>
+          <button data-q="limit=5" class="url-btn">limit=5</button>
+          <button data-q="page=2" class="url-btn">page=2</button>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-6">
+        <p class="mb-3 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-paper/40"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8ad3a4]"></span>საბოლოო მისამართი</p>
+        <p class="font-mono text-[15px] leading-relaxed break-all">
+          <span class="text-paper/40">https://</span><span class="text-paper/70">restaurantapi.stepacademy.ge</span><span class="text-[#8ad3a4]">/api/products</span><span id="urlQuery" class="text-[#f0c674]"></span>
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">დაბრუნებული ჩანაწერები</p>
+          <p id="urlCount" class="display mt-2 text-4xl font-semibold">124</p>
+          <p class="mt-1 text-sm text-ink-2">ერთი და იმავე რესურსიდან — უბრალოდ ნაკლები.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">იგივე კოდში</p>
+          <p id="urlCode" class="mt-2 font-mono text-[12px] leading-relaxed break-all text-ink-2"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="მეთოდები" data-notes="დააჭირე თითოეულ მეთოდს და ხმამაღლა წაიკითხე ცხოვრებისეული მაგალითი — ეს რჩებათ ყველაზე კარგად. მთავარი კითხვა დარბაზს: რომელი მეთოდის ორჯერ გაშვება არის საშიში? პასუხი მხოლოდ POST-ია. აქედან გამომდინარეობს ყველა „ორმაგი გადახდის“ ბაგი მსოფლიოში.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" id="methodLab">
+    <div class="col-span-4 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ზმნები</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ოთხი ზმნა,<br>რომელიც<br>ყველაფერს ფარავს</h2>
+
+      <div class="mt-8 grid gap-2">
+        <button data-m="GET"    class="m-btn"><span class="m-tag">GET</span><span>წამოიღე</span></button>
+        <button data-m="POST"   class="m-btn"><span class="m-tag">POST</span><span>შექმენი</span></button>
+        <button data-m="PUT"    class="m-btn"><span class="m-tag">PUT</span><span>შეცვალე</span></button>
+        <button data-m="DELETE" class="m-btn"><span class="m-tag">DELETE</span><span>წაშალე</span></button>
+      </div>
+
+      <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
+        ამ ოთხს ერთად <b class="text-ink">CRUD</b> ჰქვია: Create, Read, Update, Delete.
+      </div>
+    </div>
+
+    <div class="col-span-8 flex flex-col justify-center gap-5">
+      <div id="mHead" class="border-2 p-6">
+        <p id="mLabel" class="font-mono text-[11px] uppercase tracking-[0.18em]"></p>
+        <p id="mTitle" class="display mt-2 text-4xl font-semibold"></p>
+        <p id="mDesc" class="mt-3 text-lg leading-relaxed text-ink-2"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ცხოვრებისეული მაგალითი</p>
+          <p id="mReal" class="mt-2 leading-relaxed"></p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">თუ ორჯერ გაუშვებ?</p>
+          <p id="mIdem" class="mt-2 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.8] text-[#d4d4d4]"><code id="mCode"></code></pre>
+
+      <div class="flex items-center justify-between border border-rule bg-panel px-5 py-3 font-mono text-[12px]">
+        <span class="uppercase tracking-[0.15em] text-ink-2">წარმატების ტიპური სტატუსი</span>
+        <span id="mStatus" class="border border-ink bg-ink px-3 py-1 text-paper"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="სტატუსები" data-notes="დააწკაპუნე კოდებზე. მთავარი წესი, რომელიც უნდა დაიმახსოვრონ: 4xx — შენ შეგეშალა, 5xx — სერვერს შეეშალა. და თუ სულ 0-ს ან „Failed to fetch“-ს ხედავ, საერთოდ ვერ მიაღწიე სერვერამდე — ეს ჩვეულებრივ CORS-ია ან ინტერნეტი.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>პასუხი</p>
+        <h2 class="display mt-3 text-5xl font-semibold">სტატუს კოდი — სამნიშნა პასუხი</h2>
+      </div>
+      <p class="max-w-sm text-right text-sm text-ink-2">სერვერი ჯერ ერთი რიცხვით გპასუხობს და მხოლოდ მერე მონაცემებით. ეს რიცხვი უმეტესად უფრო მნიშვნელოვანია.</p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-5 gap-px bg-rule text-center font-mono text-[12px] uppercase tracking-[0.12em]">
+      <div class="bg-panel p-3 text-ink-2">1xx · მიმდინარეობს</div>
+      <div class="bg-panel p-3 text-get">2xx · გამოვიდა</div>
+      <div class="bg-panel p-3 text-put">3xx · სხვაგან წადი</div>
+      <div class="bg-panel p-3 text-del">4xx · შენ შეგეშალა</div>
+      <div class="bg-panel p-3 text-del">5xx · სერვერს შეეშალა</div>
+    </div>
+
+    <div class="mt-8 grid min-h-0 flex-1 grid-cols-12 gap-8" id="codeLab">
+      <div class="col-span-7 grid grid-cols-4 content-start gap-2">
+        <button data-c="200" class="c-btn">200</button>
+        <button data-c="201" class="c-btn">201</button>
+        <button data-c="204" class="c-btn">204</button>
+        <button data-c="304" class="c-btn">304</button>
+        <button data-c="400" class="c-btn">400</button>
+        <button data-c="401" class="c-btn">401</button>
+        <button data-c="403" class="c-btn">403</button>
+        <button data-c="404" class="c-btn">404</button>
+        <button data-c="409" class="c-btn">409</button>
+        <button data-c="422" class="c-btn">422</button>
+        <button data-c="429" class="c-btn">429</button>
+        <button data-c="500" class="c-btn">500</button>
+        <button data-c="502" class="c-btn">502</button>
+        <button data-c="503" class="c-btn">503</button>
+        <button data-c="0" class="c-btn col-span-2">Failed to fetch</button>
+      </div>
+
+      <div class="col-span-5 flex flex-col gap-4">
+        <div id="cHead" class="border-2 p-6">
+          <p id="cNum" class="display text-6xl font-semibold"></p>
+          <p id="cName" class="mt-1 font-mono text-[13px] uppercase tracking-[0.15em]"></p>
+          <p id="cDesc" class="mt-4 leading-relaxed"></p>
+        </div>
+        <div class="border border-rule bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რას აკეთებ, როცა ამას ხედავ</p>
+          <p id="cFix" class="mt-2 text-[15px] leading-relaxed"></p>
+        </div>
+        <div class="border border-rule bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ცხოვრებაში</p>
+          <p id="cReal" class="mt-2 text-[15px] leading-relaxed text-ink-2"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Headers" data-notes="აჩვენე ჩვენივე app.js. აქ სამი კითხვაა დარბაზისთვის: 1) რა მოხდება, თუ header-ს არ გავგზავნით — 401. 2) ვინ ხედავს ამ გასაღებს ბრაუზერში — ყველა. 3) მაშინ რატომ ვწერთ? იმიტომ, რომ სასწავლო პროექტია — და ეს პატიოსნად უნდა ითქვას. უსაფრთხოების სლაიდზე დავუბრუნდებით.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>Headers</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">კონვერტზე<br>დაწერილი<br>ინფორმაცია</h2>
+      <p class="mt-6 text-lg leading-relaxed text-ink-2">
+        Header არ არის მონაცემი. ეს არის მონაცემის შესახებ ინფორმაცია — ვინ აგზავნის,
+        რა ფორმატით, ვის აქვს უფლება.
+      </p>
+
+      <div class="mt-8 space-y-3">
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-mono text-[13px] text-live">x-api-key</p>
+          <p class="mt-1 text-sm text-ink-2">„ვინ ხარ“. ღონისძიების სამაჯური — თუ ხელზე არ გაქვს, კარიბჭეს ვერ გაცდები.</p>
+        </div>
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-mono text-[13px] text-live">Content-Type: application/json</p>
+          <p class="mt-1 text-sm text-ink-2">„რას გიგზავნი“. ამის გარეშე სერვერი შენს JSON-ს უბრალო ტექსტად ჩათვლის და 400-ს დაგიბრუნებს.</p>
+        </div>
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-mono text-[13px] text-live">Authorization: Bearer …</p>
+          <p class="mt-1 text-sm text-ink-2">იგივე იდეა, სტანდარტული ფორმით — ტოკენი, რომელიც შესვლის შემდეგ მიიღე.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6">
+      <div class="flex flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js — ჩვენი ნამდვილი კოდი</p>
+        </div>
+        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.8] text-[#d4d4d4]"><code><span class="text-[#569cd6]">const</span> <span class="text-[#4fc1ff]">API_KEY</span> = <span class="text-[#ce9178]">'13e8bfec-03fb-42f6-9b95-6a148dda8a25'</span>;
+<span class="text-[#569cd6]">const</span> <span class="text-[#4fc1ff]">API_URL</span> = <span class="text-[#ce9178]">'https://restaurantapi.stepacademy.ge/api/products'</span>;
+
+<span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {
+  <span class="text-[#9cdcfe]">headers</span>: {
+    <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY   <span class="italic text-[#6a9955]">// ← ეს ერთი ხაზი წყვეტს ყველაფერს</span>
+  },
+});</code></pre>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">header-ით</p>
+          <p class="mt-2 font-mono text-2xl text-get">200 OK</p>
+          <p class="mt-2 text-sm text-ink-2">მონაცემები მოვიდა.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">header-ის გარეშე</p>
+          <p class="mt-2 font-mono text-2xl text-del">401 Unauthorized</p>
+          <p class="mt-2 text-sm text-ink-2">სერვერმა ვერ გიცნო. კოდი სწორია, გასაღები არა.</p>
+        </div>
+      </div>
+
+      <div class="border-l-2 border-live pl-5 text-ink-2">
+        დაიმახსოვრე: <span class="text-ink">headers</span> არის ობიექტი <code class="font-mono text-[13px]">fetch</code>-ის მეორე არგუმენტში.
+        თუ მეორე არგუმენტს საერთოდ არ გადასცემ, მოთხოვნა ავტომატურად GET-ია header-ების გარეშე.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="JSON" data-notes="ეს სლაიდი ხსნის კითხვას, რომელიც ყველას აქვს: რატომ ვწერთ resp_obj.data.products და არა უბრალოდ resp_obj-ს. დააწკაპუნე გზის თითოეულ ნაწილს. მერე თქვი მთავარი: ამას ვერ გამოიცნობ — ან დოკუმენტაციაში წაიკითხავ, ან console.log-ით ნახავ. ორივე ნორმალურია.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" id="jsonLab">
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>JSON</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">რატომ<br><code class="font-mono text-4xl">.data.products</code></h2>
+
+      <p class="mt-6 leading-relaxed text-ink-2">
+        JSON არის <b class="text-ink">ტექსტი</b>, რომელიც ობიექტს ჰგავს. სერვერიდან სტრიქონი მოდის —
+        <code class="font-mono text-[13px]">response.json()</code> მას ნამდვილ JavaScript ობიექტად აქცევს.
+      </p>
+
+      <div class="mt-6 flex flex-wrap items-center gap-1 font-mono text-[clamp(1rem,1.8vw,1.5rem)]">
+        <button data-p="0" class="j-btn">resp_obj</button><span class="text-ink-2">.</span>
+        <button data-p="1" class="j-btn">data</button><span class="text-ink-2">.</span>
+        <button data-p="2" class="j-btn">products</button>
+      </div>
+
+      <div class="mt-6 min-h-[8rem] border-l-2 border-live pl-5">
+        <p id="jTitle" class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2"></p>
+        <p id="jDesc" class="mt-2 text-lg leading-snug"></p>
+      </div>
+
+      <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
+        ყოველი API სხვანაირად ახვევს პასუხს. ზოგი პირდაპირ მასივს აბრუნებს (როგორც ჩვენი
+        <code class="font-mono text-[12px]">mockapi.io</code>), ზოგი — ობიექტში გახვეულს.
+        <b class="text-ink">პირველი, რასაც აკეთებ ახალ API-სთან: <code class="font-mono text-[12px]">console.log</code> პასუხისა.</b>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center">
+      <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">response body — ის, რაც ქსელიდან მოვიდა</p>
+      </div>
+      <pre class="scroll overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span data-j="0" class="j-line">{</span>
+<span data-j="0" class="j-line">  <span class="text-[#9cdcfe]">"success"</span>: <span class="text-[#569cd6]">true</span>,</span>
+<span data-j="1" class="j-line">  <span class="text-[#9cdcfe]">"data"</span>: {</span>
+<span data-j="1" class="j-line">    <span class="text-[#9cdcfe]">"total"</span>: <span class="text-[#b5cea8]">124</span>,</span>
+<span data-j="2" class="j-line">    <span class="text-[#9cdcfe]">"products"</span>: [</span>
+<span data-j="2" class="j-line">      {</span>
+<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"id"</span>: <span class="text-[#b5cea8]">1</span>,</span>
+<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"მარგარიტა"</span>,</span>
+<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"price"</span>: <span class="text-[#b5cea8]">18.5</span>,</span>
+<span data-j="2" class="j-line">        <span class="text-[#9cdcfe]">"image"</span>: <span class="text-[#ce9178]">"https://…/margarita.jpg"</span></span>
+<span data-j="2" class="j-line">      },</span>
+<span data-j="2" class="j-line">      { <span class="text-[#9cdcfe]">"id"</span>: <span class="text-[#b5cea8]">2</span>, <span class="text-[#9cdcfe]">"name"</span>: <span class="text-[#ce9178]">"ლაზანია"</span>, <span class="text-[#9cdcfe]">"price"</span>: <span class="text-[#b5cea8]">24</span> }</span>
+<span data-j="2" class="j-line">    ]</span>
+<span data-j="1" class="j-line">  }</span>
+<span data-j="0" class="j-line">}</span></code></pre>
+
+      <div class="mt-5 grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">{ }</p><p class="mt-1 text-sm">ობიექტი — გასაღები: მნიშვნელობა</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">[ ]</p><p class="mt-1 text-sm">მასივი — სია, რომელზეც <code class="font-mono text-[12px]">map</code> გადის</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">" "</p><p class="mt-1 text-sm">JSON-ში გასაღები <b>ყოველთვის</b> ბრჭყალებშია</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="fetch" data-notes="გაიარე კლავიატურით, ნაბიჯ-ნაბიჯ. ყოველ ნაბიჯზე ჯერ ჰკითხე დარბაზს: რა აკლია ამ კოდს? მე-4 ნაბიჯზე (response.ok) ჩვეულებრივ ვერავინ ხვდება — და სწორედ ეს არის შემდეგი სლაიდის თემა. ეს არის ჩვენივე getProducts, ხაზ-ხაზ აწყობილი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" data-cbuild>
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ავაწყოთ</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ერთი fetch,<br>შვიდ ნაბიჯად</h2>
+
+      <div class="mt-8 flex items-center gap-3">
+        <button data-cbuild-prev class="border border-rule bg-panel px-4 py-2 font-mono text-[13px] hover:bg-ink hover:text-paper">← უკან</button>
+        <button data-cbuild-next class="border border-ink bg-ink px-4 py-2 font-mono text-[13px] text-paper hover:bg-ink-2">შემდეგი →</button>
+        <span data-cbuild-index class="font-mono text-[13px] text-ink-2"></span>
+      </div>
+
+      <div class="mt-6 min-h-[7rem] border-l-2 border-live pl-5">
+        <p data-cbuild-note class="text-lg leading-snug"></p>
+      </div>
+
+      <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
+        შვიდი ნაბიჯი, შვიდი გადაწყვეტილება. შენიშნეთ: სამი მათგანი საერთოდ არ ეხება
+        მონაცემების მიღებას — ისინი პასუხობენ კითხვას „და თუ არ გამოვიდა?“.
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center">
+      <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+        <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js</p>
+      </div>
+      <pre class="scroll min-h-[26rem] overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code data-cbuild-code><span class="cl" data-line="0"><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">getProducts</span>() {</span>
+<span class="cl" data-line="5">  <span class="text-[#c586c0]">try</span> {</span>
+<span class="cl" data-line="1">    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {</span>
+<span class="cl" data-line="2">      <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY },</span>
+<span class="cl" data-line="1">    });</span>
+<span class="cl" data-line="4"></span>
+<span class="cl" data-line="4">    <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) {</span>
+<span class="cl" data-line="4">      <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`Request failed with status ${response.status}`</span>);</span>
+<span class="cl" data-line="4">    }</span>
+<span class="cl" data-line="3"></span>
+<span class="cl" data-line="3">    <span class="text-[#569cd6]">const</span> resp_obj = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();</span>
+<span class="cl" data-line="6"></span>
+<span class="cl" data-line="6">    <span class="text-[#dcdcaa]">renderProducts</span>(resp_obj.<span class="text-[#9cdcfe]">data</span>.<span class="text-[#9cdcfe]">products</span>);</span>
+<span class="cl" data-line="5">  } <span class="text-[#c586c0]">catch</span> (error) {</span>
+<span class="cl" data-line="5">    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Failed to load products:'</span>, error);</span>
+<span class="cl" data-line="5">    <span class="text-[#4ec9b0]">document</span>.<span class="text-[#dcdcaa]">getElementById</span>(<span class="text-[#ce9178]">'products'</span>).<span class="text-[#9cdcfe]">innerHTML</span> =</span>
+<span class="cl" data-line="5">      <span class="text-[#ce9178]">`&lt;p class="error"&gt;პროდუქტები ვერ ჩაიტვირთა.&lt;/p&gt;`</span>;</span>
+<span class="cl" data-line="5">  }</span>
+<span class="cl" data-line="0">}</span></code></pre>
+
+      <script type="application/json" data-cbuild-steps>
+      [
+        {"note":"ნაბიჯი 0 — ცარიელი async ფუნქცია. სიტყვა async ერთადერთ რამეს აკეთებს: აძლევს უფლებას შიგნით await დაწერო."},
+        {"note":"ვგზავნით მოთხოვნას. await ნიშნავს „აქ დაელოდე პასუხს“. ამ დროს ბრაუზერი არ იყინება — სხვა კოდი მუშაობს."},
+        {"note":"ვამატებთ header-ს. ამის გარეშე ეს კონკრეტული API 401-ს დააბრუნებდა — მოთხოვნა მივიდოდა, მაგრამ უარით დაბრუნდებოდა."},
+        {"note":"ტექსტს ობიექტად ვაქცევთ. .json() ისევ ლოდინია — სხეული შეიძლება ჯერ კიდევ მოდიოდეს, ამიტომ მასაც await სჭირდება."},
+        {"note":"ყველაზე ხშირად გამოტოვებული ხაზი. fetch 404-ზე შეცდომას არ აგდებს — ჩვენ თვითონ უნდა შევამოწმოთ response.ok."},
+        {"note":"try/catch. ქსელი წყდება, ტელეფონი გვირაბში შედის. მომხმარებელს ცარიელი ეკრანი კი არა, ტექსტი უნდა დახვდეს."},
+        {"note":"და ბოლოს — მონაცემები ეკრანზე. მთელი ეს ფუნქცია ერთი წინადადებაა: სთხოვე, შეამოწმე, გადათარგმნე, აჩვენე."}
+      ]
+      </script>
+    </div>
+  </div>
+</section>
+
+<!-- 12 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ასინქრონულობა" data-notes="დააჭირე ღილაკს და დარბაზს ხმამაღლა ათქმევინე, რა თანმიმდევრობით გამოჩნდება ხაზები. თითქმის ყოველთვის შეცდებიან. სწორედ ეს არის ასინქრონულობა: კოდი არ ჩერდება — ის აგრძელებს და პასუხს მაშინ ამუშავებს, როცა მოვა. ყავის ანალოგია დაუბრუნე ორჯერ.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" id="asyncLab">
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ასინქრონულობა</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ჩეკი ჯერ,<br>ყავა მერე</h2>
+
+      <p class="mt-6 leading-relaxed text-ink-2">
+        კაფეში შეკვეთისას ყავას მაშინვე არ გაძლევენ — გაძლევენ <b class="text-ink">ჩეკს</b>.
+        ჩეკი ყავა არ არის, მაგრამ ის დაპირებაა, რომ ყავა იქნება. და სანამ ელოდები,
+        არავინ კეტავს კაფეს — სხვები აგრძელებენ შეკვეთას.
+      </p>
+
+      <div class="mt-6 grid gap-px bg-rule">
+        <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">Promise</p><p class="mt-1 text-sm text-ink-2">ჩეკი. ობიექტი, რომელიც ამბობს „შედეგი მოგვიანებით იქნება“.</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">await</p><p class="mt-1 text-sm text-ink-2">„ვდგები დახლთან, სანამ არ მომიტანენ“ — მაგრამ მხოლოდ ეს ფუნქცია დგება, აპლიკაცია არა.</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[12px] text-live">async</p><p class="mt-1 text-sm text-ink-2">ფუნქციის ნიშანი, რომ მასში ლოდინი შეიძლება.</p></div>
+      </div>
+
+      <button id="asyncRun" class="mt-6 w-fit border border-ink bg-ink px-5 py-2.5 font-mono text-[13px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-live">▶ გაუშვი</button>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel">
+          <p class="border-b border-rule px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">კოდი</p>
+          <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">'1 — შევუკვეთე'</span>);
+
+<span class="text-[#dcdcaa]">fetch</span>(url).<span class="text-[#dcdcaa]">then</span>(() =&gt; {
+  <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">'3 — ყავა მოვიდა'</span>);
+});
+
+<span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">'2 — დავჯექი მაგიდასთან'</span>);</code></pre>
+        </div>
+        <div class="flex flex-col bg-panel">
+          <p class="border-b border-rule px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">console</p>
+          <div id="asyncOut" class="min-h-[12rem] flex-1 space-y-1.5 bg-[#1e1e1e] p-5 font-mono text-[13px] text-[#d4d4d4]"></div>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-6 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">რატომ არის ეს მნიშვნელოვანი</p>
+        <p class="mt-3 text-lg leading-relaxed">
+          თუ <code class="font-mono">fetch</code>-ის შემდეგ მაშინვე დაწერ <code class="font-mono">console.log(products)</code>-ს,
+          <span class="text-[#f2a2a2]">undefined</span> დაგხვდება — არა იმიტომ, რომ კოდი მცდარია,
+          არამედ იმიტომ, რომ <span class="text-[#8ad3a4]">ჯერ არ მოსულა</span>. მონაცემებთან მუშაობა
+          მხოლოდ <code class="font-mono">await</code>-ის ან <code class="font-mono">.then()</code>-ის შიგნით შეიძლება.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="სინტაქსი" data-notes="ორივე კოდი ერთსა და იმავეს აკეთებს — ეს ხაზგასმით თქვი. .then() არ არის ძველი და მცდარი, ის უბრალოდ სხვა ჩაწერაა. მაგრამ როცა სამი მოთხოვნა ერთმანეთზეა დამოკიდებული, მარჯვენა სვეტი იკითხება, მარცხენა — არა. აჩვენე ბოლო ბლოკი და თქვი: ამას callback hell ერქვა.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ორი ჩაწერა</p>
+        <h2 class="display mt-3 text-5xl font-semibold"><code class="font-mono">.then()</code> და <code class="font-mono">await</code> — ერთი და იგივე</h2>
+      </div>
+      <p class="max-w-sm text-right text-sm text-ink-2">ორივე Promise-ს ელოდება. განსხვავება მხოლოდ იმაშია, თუ როგორ იკითხება ის, რაც შემდეგ ხდება.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-rule px-5 py-3">
+          <span class="h-1.5 w-1.5 rounded-full bg-put"></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">.then() — ჯაჭვი</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#dcdcaa]">fetch</span>(API_URL)
+  .<span class="text-[#dcdcaa]">then</span>(response =&gt; response.<span class="text-[#dcdcaa]">json</span>())
+  .<span class="text-[#dcdcaa]">then</span>(data =&gt; {
+    <span class="text-[#dcdcaa]">renderProducts</span>(data.<span class="text-[#9cdcfe]">data</span>.<span class="text-[#9cdcfe]">products</span>);
+  })
+  .<span class="text-[#dcdcaa]">catch</span>(error =&gt; {
+    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(error);
+  });</code></pre>
+        <div class="border-t border-rule p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">სამი მოთხოვნა ერთმანეთზე დამოკიდებული</p>
+          <pre class="mt-3 overflow-auto bg-[#1e1e1e] p-4 font-mono text-[11.5px] leading-[1.7] text-[#d4d4d4]"><code><span class="text-[#dcdcaa]">getUser</span>().<span class="text-[#dcdcaa]">then</span>(u =&gt; {
+  <span class="text-[#dcdcaa]">getOrders</span>(u.id).<span class="text-[#dcdcaa]">then</span>(o =&gt; {
+    <span class="text-[#dcdcaa]">getItems</span>(o[<span class="text-[#b5cea8]">0</span>].id).<span class="text-[#dcdcaa]">then</span>(i =&gt; {
+      <span class="italic text-[#6a9955]">// და ასე შემდეგ, მარჯვნივ და მარჯვნივ…</span>
+    });
+  });
+});</code></pre>
+        </div>
+      </div>
+
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-rule px-5 py-3">
+          <span class="h-1.5 w-1.5 rounded-full bg-get"></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">async / await — ზემოდან ქვემოთ</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#c586c0]">try</span> {
+  <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL);
+  <span class="text-[#569cd6]">const</span> data = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();
+
+  <span class="text-[#dcdcaa]">renderProducts</span>(data.<span class="text-[#9cdcfe]">data</span>.<span class="text-[#9cdcfe]">products</span>);
+} <span class="text-[#c586c0]">catch</span> (error) {
+  <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(error);
+}</code></pre>
+        <div class="border-t border-rule p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">იგივე სამი მოთხოვნა</p>
+          <pre class="mt-3 overflow-auto bg-[#1e1e1e] p-4 font-mono text-[11.5px] leading-[1.7] text-[#d4d4d4]"><code><span class="text-[#569cd6]">const</span> user   = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getUser</span>();
+<span class="text-[#569cd6]">const</span> orders = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getOrders</span>(user.id);
+<span class="text-[#569cd6]">const</span> items  = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getItems</span>(orders[<span class="text-[#b5cea8]">0</span>].id);
+<span class="italic text-[#6a9955]">// სამი ხაზი. სამივე იკითხება.</span></code></pre>
+          <p class="mt-4 text-sm text-ink-2">ჩვენს პროექტში <b class="text-ink">await</b> გვაქვს. სხვისი კოდი კი ხშირად <code class="font-mono text-[12px]">.then()</code>-ითაა — ორივე უნდა შეგეძლოს წაკითხვა.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ხაფანგი" data-notes="აქ გააჩერე ლექცია. დაუსვი კითხვა, დაელოდე პასუხს, დაითვალე ხმები — და მხოლოდ მერე დააკლიკე ბარათს. ეს ერთი წუთი ყველაზე ღირებულია მთელ ლექციაში: fetch მხოლოდ მაშინ აგდებს შეცდომას, როცა სერვერამდე ვერ მიაღწია. 404 და 500 მისთვის წარმატებული პასუხებია.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex flex-1 flex-col justify-center">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>ხაფანგი #1</p>
+      <h2 class="display mt-3 text-5xl font-semibold">სერვერმა 404 დააბრუნა. სად მოხვდება კოდი?</h2>
+
+      <div class="mt-8 flip-card cursor-pointer select-none" data-flip tabindex="0" role="button" aria-label="დააკლიკე პასუხის სანახავად">
+        <div class="flip-inner">
+          <div class="flip-front border border-rule bg-panel p-8 transition-colors hover:border-ink">
+            <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">იფიქრეთ, მერე დააკლიკეთ</p>
+            <pre class="mt-4 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13.5px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#c586c0]">try</span> {
+  <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">'/api/products/9999'</span>);  <span class="italic text-[#6a9955]">// ← არ არსებობს</span>
+  <span class="text-[#569cd6]">const</span> data = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();
+  <span class="text-[#dcdcaa]">render</span>(data);          <span class="italic text-[#6a9955]">// A</span>
+} <span class="text-[#c586c0]">catch</span> (error) {
+  <span class="text-[#dcdcaa]">showError</span>();           <span class="italic text-[#6a9955]">// B</span>
+}</code></pre>
+            <p class="mt-5 text-lg">A თუ B?</p>
+          </div>
+          <div class="flip-back border border-ink bg-ink p-8 text-paper">
+            <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">პასუხი</p>
+            <p class="mt-2 display text-4xl font-semibold">A — <span class="text-[#f2a2a2]">render()</span> გაეშვება</p>
+            <p class="mt-4 text-lg leading-relaxed">
+              <code class="font-mono">fetch</code> შეცდომას აგდებს <b>მხოლოდ</b> მაშინ, როცა მოთხოვნა საერთოდ ვერ გაიგზავნა:
+              ინტერნეტი არ არის, დომენი არ არსებობს, CORS-მა დაბლოკა.
+            </p>
+            <p class="mt-3 text-lg leading-relaxed">
+              404 და 500 <span class="text-[#8ad3a4]">წარმატებით მიღებული პასუხებია</span> — მოთხოვნა მივიდა, სერვერმა უპასუხა.
+              ის, რომ პასუხი ცუდია, HTTP-ის დონეზე პრობლემა არ არის.
+            </p>
+            <div class="mt-5 border-t border-paper/20 pt-4">
+              <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ამიტომ ვწერთ ამ ორ ხაზს ყოველთვის</p>
+              <pre class="mt-2 font-mono text-[13px] leading-[1.8] text-[#8ad3a4]"><code><span class="text-[#c586c0]">if</span> (!response.ok) throw new Error(response.status);</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">response.ok</p>
+          <p class="mt-2 text-sm text-ink-2"><code class="font-mono">true</code>, თუ სტატუსი 200–299-შია. სხვა ყველაფერზე <code class="font-mono">false</code>.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-put">response.status</p>
+          <p class="mt-2 text-sm text-ink-2">თავად რიცხვი — 200, 404, 500. შეცდომის ტექსტში ჩასმა აუცილებელია.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">catch</p>
+          <p class="mt-2 text-sm text-ink-2">იჭერს ორივეს: ქსელის ავარიასაც და ჩვენ მიერ ხელით გადაგდებულ <code class="font-mono">Error</code>-საც.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="შეცდომები" data-notes="აქ UX-ზეა საუბარი და არა სინტაქსზე. კითხვა დარბაზს: რას ხედავს მომხმარებელი, სანამ მონაცემები მოდის? თუ პასუხია „არაფერს“, ეს ბაგია. აჩვენე dashboard.js-ის showStatus — სამი მდგომარეობა უკვე გვაქვს, უბრალოდ სახელი უნდა დავარქვათ.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>მდგომარეობები</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">ყოველ<br>მოთხოვნას<br>ოთხი სახე აქვს</h2>
+      <p class="mt-6 leading-relaxed text-ink-2">
+        დამწყები კოდი მხოლოდ ერთს ხატავს — წარმატებულს. დანარჩენ სამში მომხმარებელი
+        ცარიელ ეკრანს უყურებს და ფიქრობს, რომ აპლიკაცია გატყდა.
+      </p>
+      <div class="mt-8 border-l-2 border-live pl-5">
+        <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">ლიფტის ღილაკი, რომელიც არ ინთება. დააჭირე კიდევ. და კიდევ. და კიდევ.</span></p>
+      </div>
+      <div class="mt-8 border border-rule bg-panel p-5 text-sm text-ink-2">
+        <b class="text-ink">წესი:</b> სანამ <code class="font-mono text-[12px]">fetch</code>-ს დაწერ, ჯერ დაწერე ის, რაც ეკრანზე იქნება
+        მოთხოვნის დროს. ერთი ხაზი <code class="font-mono text-[12px]">showStatus('იტვირთება…')</code> უფრო მეტს
+        აკეთებს, ვიდრე ნებისმიერი ანიმაცია.
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-4">
+      <div class="grid grid-cols-4 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">loading</p>
+          <div class="mt-3 space-y-2"><div class="h-2 w-full animate-pulse rounded bg-rule"></div><div class="h-2 w-3/4 animate-pulse rounded bg-rule"></div></div>
+          <p class="mt-3 text-sm">„იტვირთება…“</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">success</p>
+          <div class="mt-3 space-y-2"><div class="h-2 w-full rounded bg-get/50"></div><div class="h-2 w-3/4 rounded bg-get/30"></div></div>
+          <p class="mt-3 text-sm">მონაცემები</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-put">empty</p>
+          <div class="mt-3 h-6 border border-dashed border-rule"></div>
+          <p class="mt-3 text-sm">„ჯერ არაფერია. დაამატე პირველი.“</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">error</p>
+          <div class="mt-3 h-6 border border-del/40 bg-del/10"></div>
+          <p class="mt-3 text-sm">„ვერ ჩაიტვირთა. სცადე თავიდან.“</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js — უკვე გვაქვს, უბრალოდ სახელი დავარქვათ</p>
+        </div>
+        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">getCars</span>() {
+  <span class="text-[#dcdcaa]">showStatus</span>(<span class="text-[#ce9178]">'იტვირთება…'</span>, <span class="text-[#ce9178]">'loading'</span>);        <span class="italic text-[#6a9955]">// 1 — მაშინვე</span>
+  <span class="text-[#c586c0]">try</span> {
+    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL);
+    <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(response.<span class="text-[#9cdcfe]">status</span>);
+
+    <span class="text-[#569cd6]">const</span> cars = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();
+    <span class="text-[#c586c0]">if</span> (cars.<span class="text-[#9cdcfe]">length</span> === <span class="text-[#b5cea8]">0</span>) <span class="text-[#c586c0]">return</span> <span class="text-[#dcdcaa]">showStatus</span>(<span class="text-[#ce9178]">'ჯერ არაფერია'</span>, <span class="text-[#ce9178]">'empty'</span>);  <span class="italic text-[#6a9955]">// 3</span>
+
+    <span class="text-[#dcdcaa]">renderCars</span>(cars);                             <span class="italic text-[#6a9955]">// 2</span>
+    <span class="text-[#dcdcaa]">hideStatus</span>();
+  } <span class="text-[#c586c0]">catch</span> (error) {
+    <span class="text-[#dcdcaa]">showStatus</span>(<span class="text-[#ce9178]">'ვერ ჩაიტვირთა. სცადე თავიდან.'</span>, <span class="text-[#ce9178]">'error'</span>);   <span class="italic text-[#6a9955]">// 4</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="border-l-2 border-del pl-5 text-ink-2">
+        <b class="text-ink">console.error მომხმარებლისთვის არ არის.</b> ის შენთვისაა. მომხმარებელს ეკრანზე უნდა ეწეროს — ქართულად, ადამიანურად, გამოსავლის შეთავაზებით.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="რენდერი" data-notes="map → join → innerHTML არის ის სამი ნაბიჯი, რომელსაც ყველა ჩვენი ფუნქცია იმეორებს. ხაზი გაუსვი join('')-ს: მის გარეშე მასივი მძიმეებით გადაიქცევა ტექსტად და ეკრანზე მძიმეები გამოჩნდება. ბოლოს XSS-ზე ერთი წუთი — არ გააღრმავო, უბრალოდ თქვი, რომ პრობლემა არსებობს.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ეკრანზე</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">მასივიდან<br>HTML-მდე</h2>
+
+      <div class="mt-8 space-y-5">
+        <div class="flex gap-4">
+          <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 font-mono text-[12px] text-live">1</span>
+          <div><p class="font-medium"><code class="font-mono">map()</code> — თითო ობიექტი, თითო სტრიქონი</p><p class="mt-1 text-sm text-ink-2">მასივი შიგნიდან არ იცვლება. map ახალ მასივს აბრუნებს.</p></div>
+        </div>
+        <div class="flex gap-4">
+          <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 font-mono text-[12px] text-live">2</span>
+          <div><p class="font-medium"><code class="font-mono">join('')</code> — სტრიქონების შეწებება</p><p class="mt-1 text-sm text-ink-2">ცარიელი ბრჭყალები აუცილებელია. <code class="font-mono text-[12px]">join()</code> ცარიელის გარეშე მძიმეებს ჩასვამს.</p></div>
+        </div>
+        <div class="flex gap-4">
+          <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 font-mono text-[12px] text-live">3</span>
+          <div><p class="font-medium"><code class="font-mono">innerHTML</code> — ერთხელ, ბოლოს</p><p class="mt-1 text-sm text-ink-2">ციკლში innerHTML-ის შეცვლა ბრაუზერს აიძულებს ყოველ ჯერზე თავიდან დახატოს.</p></div>
+        </div>
+      </div>
+
+      <div class="mt-8 border border-del/40 bg-del/5 p-5">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          ბონუსი, რომელიც კურსში არ წერია
+        </p>
+        <p class="mt-2 text-sm">თუ <code class="font-mono text-[12px]">product.name</code> სერვერიდან მოდის და მასში <code class="font-mono text-[12px]">&lt;script&gt;</code> წერია, <code class="font-mono text-[12px]">innerHTML</code> მას <b>გაუშვებს</b>. ამას XSS ჰქვია. სასწავლო პროექტისთვის — ისწავლე, რომ არსებობს. რეალურისთვის — <code class="font-mono text-[12px]">textContent</code> ან escape.</p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="flex flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js — renderProducts</p>
+        </div>
+        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">function</span> <span class="text-[#dcdcaa]">renderProducts</span>(products) {
+  <span class="text-[#569cd6]">const</span> html = products.<span class="text-[#dcdcaa]">map</span>(product =&gt; <span class="text-[#ce9178]">`</span>
+    <span class="text-[#ce9178]">&lt;div class="product"&gt;</span>
+      <span class="text-[#ce9178]">&lt;img src="</span><span class="text-[#569cd6]">${</span>product.image<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">" alt="</span><span class="text-[#569cd6]">${</span>product.name<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">"&gt;</span>
+      <span class="text-[#ce9178]">&lt;h3&gt;</span><span class="text-[#569cd6]">${</span>product.name<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">&lt;/h3&gt;</span>
+      <span class="text-[#ce9178]">&lt;p&gt;</span><span class="text-[#569cd6]">${</span>product.price<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]"> ₾&lt;/p&gt;</span>
+    <span class="text-[#ce9178]">&lt;/div&gt;</span>
+  <span class="text-[#ce9178]">`</span>).<span class="text-[#dcdcaa]">join</span>(<span class="text-[#ce9178]">''</span>);
+
+  <span class="text-[#4ec9b0]">document</span>.<span class="text-[#dcdcaa]">getElementById</span>(<span class="text-[#ce9178]">'products'</span>).<span class="text-[#9cdcfe]">innerHTML</span> = html;
+}</code></pre>
+      </div>
+
+      <div class="grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">backtick <code>`</code></p>
+          <p class="mt-2 text-sm text-ink-2">template literal — მრავალხაზოვანი ტექსტი, რომელშიც ცვლადი ჩაისმება.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">${ }</p>
+          <p class="mt-2 text-sm text-ink-2">ჩასმის ადგილი. შიგნით ნებისმიერი გამოსახულება — მათ შორის <code class="font-mono text-[12px]">toLocaleString()</code>.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">data-id</p>
+          <p class="mt-2 text-sm text-ink-2">ღილაკზე ჩაწერილი id — სწორედ ის, რაც შემდეგ სლაიდზე გამოგვადგება.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ცოცხალი" data-notes="ეს ნამდვილი მოთხოვნაა ნამდვილ სერვერზე — გახსენი DevTools → Network და ერთად უყურეთ. თუ ინტერნეტი არ არის, სლაიდი თავად გადავა სადემონსტრაციო რეჟიმზე და ამას პატიოსნად დაწერს. აჩვენე დრო მილიწამებში: სწორედ ეს დროა ის, რის გამოც await გვჭირდება.">
+  <div class="flex h-full flex-col px-14 py-12" id="liveLab">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ცოცხალი დემო</p>
+        <h2 class="display mt-3 text-5xl font-semibold">გავუშვათ ნამდვილი მოთხოვნა</h2>
+      </div>
+      <button id="liveSend" class="border border-ink bg-ink px-6 py-3 font-mono text-[13px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-live">▶ გაგზავნე</button>
+    </div>
+
+    <div class="mt-8 grid grid-cols-12 items-center gap-6">
+      <div class="col-span-3 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">კლიენტი</p>
+        <p class="mt-2 font-medium">ეს სლაიდი</p>
+        <p class="mt-1 font-mono text-[12px] text-ink-2">fetch(API_URL)</p>
+      </div>
+
+      <div class="col-span-6 relative h-24">
+        <div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-rule"></div>
+        <div id="liveChip" class="absolute top-1/2 left-0 hidden -translate-y-1/2 border border-live bg-paper px-3 py-1.5 font-mono text-[12px] whitespace-nowrap text-live shadow"></div>
+        <div id="liveHint" class="absolute inset-0 flex items-center justify-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">დააჭირე „გაგზავნე“-ს</div>
+      </div>
+
+      <div id="liveServer" class="col-span-3 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">სერვერი</p>
+        <p class="mt-2 font-medium">mockapi.io</p>
+        <p class="mt-1 font-mono text-[12px] text-ink-2">/cars</p>
+      </div>
+    </div>
+
+    <div class="mt-8 grid min-h-0 flex-1 grid-cols-12 gap-px bg-rule">
+      <div class="col-span-4 flex flex-col bg-panel p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">პასუხი</p>
+        <div class="mt-4 flex items-baseline gap-3">
+          <span id="liveStatus" class="display text-6xl font-semibold text-ink-2">—</span>
+          <span id="liveStatusText" class="font-mono text-[13px] uppercase tracking-[0.15em] text-ink-2"></span>
+        </div>
+        <dl class="mt-6 space-y-3 border-t border-rule pt-5 font-mono text-[12px]">
+          <div class="flex justify-between"><dt class="text-ink-2">დრო</dt><dd id="liveTime">—</dd></div>
+          <div class="flex justify-between"><dt class="text-ink-2">ჩანაწერი</dt><dd id="liveCount">—</dd></div>
+          <div class="flex justify-between"><dt class="text-ink-2">ფორმატი</dt><dd id="liveType">—</dd></div>
+        </dl>
+        <p id="liveNote" class="mt-auto pt-5 text-xs leading-relaxed text-ink-2"></p>
+      </div>
+
+      <div class="col-span-8 flex min-h-0 flex-col bg-panel">
+        <p class="border-b border-rule px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">response body</p>
+        <pre id="liveBody" class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.8] text-[#6a9955]">// ჯერ არაფერი გამოგვიგზავნია</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="CRUD" data-notes="ეს სლაიდი აკავშირებს ყველაფერს ჩვენს dashboard-თან. თითო ღილაკი — თითო მეთოდი. თქვი: ამ ეკრანზე მთელი backend-ის ლექსიკონია. თუ ეს ოთხი ერთად გაგიკეთებია, API შეგიძლია.">
+  <div class="flex h-full flex-col px-14 py-10">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ჩვენი dashboard</p>
+        <h2 class="display mt-3 text-5xl font-semibold">ერთი ეკრანი, ოთხივე მეთოდი</h2>
+      </div>
+      <p class="max-w-sm text-right text-sm text-ink-2">ინტერფეისის ყოველი ელემენტი ერთ HTTP მოთხოვნას შეესაბამება. სხვა არაფერი ხდება.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-12 gap-8 py-8">
+      <div class="col-span-7 border border-rule bg-panel p-6">
+        <div class="flex items-center justify-between border-b border-rule pb-3">
+          <p class="display text-2xl font-semibold">🚗 Cars Dashboard</p>
+          <span class="border border-get px-2 py-1 font-mono text-[10px] uppercase tracking-[0.15em] text-get">GET · ჩატვირთვა</span>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-4">
+          <div class="border border-rule bg-paper p-4">
+            <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ფორმა</p>
+            <div class="mt-3 space-y-2">
+              <div class="h-7 border border-rule bg-panel"></div>
+              <div class="h-7 border border-rule bg-panel"></div>
+              <div class="h-7 border border-rule bg-panel"></div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <span class="border border-post bg-post px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-paper">POST · დამატება</span>
+              <span class="border border-put px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-put">PUT · შენახვა</span>
+            </div>
+          </div>
+
+          <div class="grid gap-3">
+            <div class="border border-rule bg-paper p-3">
+              <p class="text-sm font-medium">Ferrari 250 GTO</p>
+              <p class="font-mono text-[11px] text-ink-2">1963 · $70,000,000</p>
+              <div class="mt-2 flex gap-2">
+                <span class="border border-put px-2 py-0.5 font-mono text-[10px] text-put">Edit</span>
+                <span class="border border-del px-2 py-0.5 font-mono text-[10px] text-del">Delete</span>
+              </div>
+            </div>
+            <div class="border border-rule bg-paper p-3 opacity-60">
+              <p class="text-sm font-medium">Porsche 911</p>
+              <p class="font-mono text-[11px] text-ink-2">1973 · $180,000</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ol class="col-span-5 flex flex-col justify-center gap-px bg-rule">
+        <li class="grid grid-cols-[6rem_1fr] gap-4 bg-paper p-5">
+          <span class="font-mono text-[12px] uppercase tracking-[0.12em] text-get">GET</span>
+          <span class="text-sm">გვერდი იხსნება ან „⟳ Refresh“ → სია ივსება. <span class="text-ink-2">ერთადერთი, რაც ავტომატურად ხდება.</span></span>
+        </li>
+        <li class="grid grid-cols-[6rem_1fr] gap-4 bg-paper p-5">
+          <span class="font-mono text-[12px] uppercase tracking-[0.12em] text-post">POST</span>
+          <span class="text-sm">ფორმა ცარიელი id-ით → „Add car“. <span class="text-ink-2">სერვერი თვითონ ანიჭებს id-ს.</span></span>
+        </li>
+        <li class="grid grid-cols-[6rem_1fr] gap-4 bg-paper p-5">
+          <span class="font-mono text-[12px] uppercase tracking-[0.12em] text-put">PUT</span>
+          <span class="text-sm">„Edit“ → ფორმა ივსება → „Save changes“. <span class="text-ink-2">id უკვე გვაქვს, ესე იგი ვცვლით.</span></span>
+        </li>
+        <li class="grid grid-cols-[6rem_1fr] gap-4 bg-paper p-5">
+          <span class="font-mono text-[12px] uppercase tracking-[0.12em] text-del">DELETE</span>
+          <span class="text-sm">„Delete“ → confirm → წაშლა. <span class="text-ink-2">ერთადერთი შეუქცევადი მოქმედება.</span></span>
+        </li>
+        <li class="grid grid-cols-[6rem_1fr] gap-4 bg-ink p-5 text-paper">
+          <span class="font-mono text-[12px] uppercase tracking-[0.12em] text-[#8ad3a4]">ყოველთვის</span>
+          <span class="text-sm">ყოველი ცვლილების შემდეგ ისევ <code class="font-mono">getCars()</code> — ეკრანი სერვერს ეკითხება, თავის თავს არა.</span>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 19 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="POST" data-notes="სამი განსხვავება GET-თან — ხმამაღლა დაათვლევინე დარბაზს. მერე მთავარი კითხვა: რატომ JSON.stringify? იმიტომ, რომ ქსელში ობიექტი ვერ გაივლის, მხოლოდ ტექსტი. stringify აქცევს ობიექტს ტექსტად, .json() უკან — ეს ორი ერთმანეთის საპირისპიროა.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-post"><span class="h-1.5 w-1.5 rounded-full bg-post"></span>POST</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">როცა<br>მონაცემს<br>ვგზავნით</h2>
+      <p class="mt-6 leading-relaxed text-ink-2">
+        GET-სა და POST-ს შორის მხოლოდ სამი განსხვავებაა. სამივე <code class="font-mono text-[13px]">fetch</code>-ის
+        მეორე არგუმენტშია.
+      </p>
+
+      <ol class="mt-8 space-y-4">
+        <li class="flex gap-4"><span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-post/30 bg-post/10 font-mono text-[12px] text-post">1</span><div><p class="font-medium"><code class="font-mono">method: 'POST'</code></p><p class="mt-1 text-sm text-ink-2">GET default-ია, ამიტომ მას არასდროს ვწერთ. ყველა დანარჩენს — ყოველთვის.</p></div></li>
+        <li class="flex gap-4"><span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-post/30 bg-post/10 font-mono text-[12px] text-post">2</span><div><p class="font-medium"><code class="font-mono">Content-Type</code> header</p><p class="mt-1 text-sm text-ink-2">„ის, რასაც გიგზავნი, JSON-ია“. ამის გარეშე სერვერი body-ს ვერ წაიკითხავს.</p></div></li>
+        <li class="flex gap-4"><span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-post/30 bg-post/10 font-mono text-[12px] text-post">3</span><div><p class="font-medium"><code class="font-mono">body: JSON.stringify(car)</code></p><p class="mt-1 text-sm text-ink-2">ობიექტი ტექსტად. პირდაპირ ობიექტს ვერ გაგზავნი — ქსელში მხოლოდ ტექსტი მიდის.</p></div></li>
+      </ol>
+
+      <div class="mt-8 border-l-2 border-post pl-5">
+        <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">ფოსტაში წერილის ჩაგდება. კონვერტზე წერია, რა ენაზეა (Content-Type), შიგნით — თავად წერილი (body).</span></p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="flex flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js — createCar</p>
+        </div>
+        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">createCar</span>(car) {
+  <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {
+    <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'POST'</span>,
+    <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'Content-Type'</span>: <span class="text-[#ce9178]">'application/json'</span> },
+    <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>(car),
+  });
+
+  <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) {
+    <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`Request failed with status ${response.status}`</span>);
+  }
+
+  <span class="text-[#c586c0]">return</span> response.<span class="text-[#dcdcaa]">json</span>();   <span class="italic text-[#6a9955]">// სერვერი აბრუნებს შექმნილს — უკვე id-ით</span>
+}</code></pre>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რას ვგზავნით</p>
+          <pre class="mt-2 font-mono text-[12px] leading-relaxed text-ink-2"><code>{ name: "Ferrari 250 GTO",
+  manufacturer: "Ferrari",
+  year: 1963,
+  priceUSD: 70000000 }</code></pre>
+          <p class="mt-2 text-xs">id არ ვწერთ.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">რას გვიბრუნებს</p>
+          <pre class="mt-2 font-mono text-[12px] leading-relaxed text-ink-2"><code>{ <b class="text-get">id: "17"</b>,
+  name: "Ferrari 250 GTO",
+  manufacturer: "Ferrari",
+  year: 1963, priceUSD: 70000000 }</code></pre>
+          <p class="mt-2 text-xs">id სერვერისგან მოვიდა. <b>201 Created.</b></p>
+        </div>
+      </div>
+
+      <div class="border-l-2 border-del pl-5 text-ink-2">
+        <b class="text-ink">ხაფანგი #2:</b> <code class="font-mono text-[13px]">body</code> უნდა იყოს ტექსტი. თუ დაწერ <code class="font-mono text-[13px]">body: car</code>,
+        ბრაუზერი ობიექტს გადააქცევს სტრიქონად <code class="font-mono text-[13px]">"[object Object]"</code> და სერვერი 400-ს დააბრუნებს.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="PUT / PATCH" data-notes="ეს ის განსხვავებაა, რომელსაც გამოცდაზე ყოველთვის კითხულობენ. ანალოგია დოკუმენტზე მუშაობს ყველაზე კარგად: PUT — მთელ ფურცელს ცვლი, PATCH — ერთ სიტყვას ასწორებ. და აუცილებლად თქვი, რომ PUT-ის დროს გამოტოვებული ველი ბევრ API-ში იშლება.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-put"><span class="h-1.5 w-1.5 rounded-full bg-put"></span>განახლება</p>
+        <h2 class="display mt-3 text-5xl font-semibold">PUT თუ PATCH?</h2>
+      </div>
+      <p class="max-w-md text-right text-sm text-ink-2">ორივე ცვლის არსებულს. ორივეს სჭირდება id მისამართში. განსხვავება მხოლოდ იმაშია, რამდენს აგზავნი.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-6 py-4">
+          <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-put"><span class="h-1.5 w-1.5 rounded-full bg-put"></span>PUT · ჩანაცვლება</p>
+          <p class="mt-2 text-lg">გზავნი <b>სრულ</b> ობიექტს. სერვერი ძველს მთლიანად შეცვლის ახლით.</p>
+        </div>
+        <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, {
+  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'PUT'</span>,
+  <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'Content-Type'</span>: <span class="text-[#ce9178]">'application/json'</span> },
+  <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>({
+    <span class="text-[#9cdcfe]">name</span>: <span class="text-[#ce9178]">'Ferrari 250 GTO'</span>,
+    <span class="text-[#9cdcfe]">manufacturer</span>: <span class="text-[#ce9178]">'Ferrari'</span>,
+    <span class="text-[#9cdcfe]">year</span>: <span class="text-[#b5cea8]">1963</span>,
+    <span class="text-[#9cdcfe]">priceUSD</span>: <span class="text-[#b5cea8]">72000000</span>   <span class="italic text-[#6a9955]">// ← მხოლოდ ეს შეიცვალა</span>
+  }),
+});</code></pre>
+        <div class="border-t border-rule bg-del/5 p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">საშიში ადგილი</p>
+          <p class="mt-2 text-sm">თუ <code class="font-mono text-[12px]">manufacturer</code>-ს არ გაგზავნი, ბევრი API მას <b>წაშლის</b>. PUT-ს „გამოტოვება“ არ ესმის — მისთვის გამოტოვება ნიშნავს „ეს ველი აღარ არსებობს“.</p>
+        </div>
+      </div>
+
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-6 py-4">
+          <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-get"><span class="h-1.5 w-1.5 rounded-full bg-get"></span>PATCH · შესწორება</p>
+          <p class="mt-2 text-lg">გზავნი <b>მხოლოდ იმას</b>, რაც შეიცვალა. დანარჩენს სერვერი არ ეხება.</p>
+        </div>
+        <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, {
+  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'PATCH'</span>,
+  <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'Content-Type'</span>: <span class="text-[#ce9178]">'application/json'</span> },
+  <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>({
+    <span class="text-[#9cdcfe]">priceUSD</span>: <span class="text-[#b5cea8]">72000000</span>
+  }),
+});
+
+<span class="italic text-[#6a9955]">// სამი ხაზით ნაკლები. სამივე ველი ადგილზე რჩება.</span></code></pre>
+        <div class="border-t border-rule p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ცხოვრებაში</p>
+          <p class="mt-2 text-sm"><b>PUT</b> — ხელახლა ბეჭდავ მთელ ფურცელს და ძველს აგდებ.<br><b>PATCH</b> — მაკორექტორით ერთ სიტყვას ასწორებ.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center gap-6 border border-rule bg-panel px-6 py-4 text-sm">
+      <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">გახსოვდეს</span>
+      <span>id ყოველთვის <b>მისამართშია</b>, არა body-ში: <code class="font-mono text-[13px]">/cars/17</code>. body ამბობს <i>რა</i>, URL ამბობს <i>რომელს</i>.</span>
+    </div>
+  </div>
+</section>
+
+<!-- 21 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="DELETE" data-notes="ეს ჩვენივე dashboard.js-ის ნამდვილი კოდია — არაფერი შემიცვლია. მიეცი დარბაზს 90 წამი და სთხოვე სამი პრობლემის პოვნა. მერე დააკლიკე. ეს ყველაზე ეფექტური სავარჯიშოა: საკუთარ კოდში ბაგის პოვნა უფრო მეტს ასწავლის, ვიდრე სწორი კოდის ჩვენება.">
+  <div class="grid h-full grid-cols-12 gap-8 px-14 py-12">
+    <div class="col-span-4 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>DELETE · სავარჯიშო</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">იპოვე<br>სამი<br>პრობლემა</h2>
+
+      <p class="mt-6 leading-relaxed text-ink-2">
+        ეს ჩვენივე <code class="font-mono text-[13px]">dashboard.js</code>-ის ნამდვილი კოდია. ის მუშაობს — მანქანა ნამდვილად იშლება.
+        და მაინც სამი რამ არასწორია.
+      </p>
+
+      <div class="mt-8 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">მინიშნებები</p>
+        <ul class="mt-3 space-y-2 text-sm text-ink-2">
+          <li>— რა თანმიმდევრობით სრულდება ხაზები?</li>
+          <li>— თუ სერვერმა 404 დააბრუნა, გაიგებს ამას გამომძახებელი ფუნქცია?</li>
+          <li>— რამდენჯერ წერია მისამართი ამ ფაილში?</li>
+        </ul>
+      </div>
+
+      <div class="mt-auto border-l-2 border-del pl-5 text-sm text-ink-2">
+        DELETE-ს body არ სჭირდება. მისამართში id — და სულ ეს არის. წარმატებაზე ჩვეულებრივ <b class="text-ink">200</b> ან <b class="text-ink">204 No Content</b> ბრუნდება.
+      </div>
+    </div>
+
+    <div class="col-span-8 flex flex-col justify-center">
+      <div class="flip-card cursor-pointer select-none" data-flip tabindex="0" role="button" aria-label="დააკლიკე პასუხის სანახავად">
+        <div class="flip-inner">
+          <div class="flip-front">
+            <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+              <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+              <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js · deleteCar — დააკლიკე პასუხისთვის</p>
+            </div>
+            <pre class="overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">deleteCar</span>(id) {
+  <span class="text-[#c586c0]">try</span> {
+    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`https://…mockapi.io/cars/${id}`</span>, {
+      <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'DELETE'</span>,
+    });
+    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">`Car ${id} deleted successfully.`</span>);
+
+    <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) {
+      <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`Request failed with status ${response.status}`</span>);
+    }
+  }
+  <span class="text-[#c586c0]">catch</span> (error) {
+    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Failed to delete car:'</span>, error);
+  }
+}</code></pre>
+          </div>
+
+          <div class="flip-back border border-ink bg-ink p-7 text-paper">
+            <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">სამი პრობლემა</p>
+            <div class="mt-4 space-y-4">
+              <div class="border-l-2 border-[#f2a2a2] pl-4">
+                <p class="font-medium">1. „deleted successfully“ იწერება შემოწმებამდე</p>
+                <p class="mt-1 text-sm text-paper/70">console.log ერთი ხაზით ადრეა. 404-ის შემთხვევაშიც კონსოლში „წარმატებით წაიშალა“ გვიწერია. ის უნდა ჩამოვიდეს <code class="font-mono">if</code>-ის ქვემოთ.</p>
+              </div>
+              <div class="border-l-2 border-[#f2a2a2] pl-4">
+                <p class="font-medium">2. catch შეცდომას „ჭამს“</p>
+                <p class="mt-1 text-sm text-paper/70">throw ხდება, მაგრამ იქვე იჭერს ადგილობრივი catch. გამომძახებელი ვერაფერს გაიგებს — <code class="font-mono">getCars()</code> გაეშვება ისე, თითქოს ყველაფერი კარგადაა, და მომხმარებელი <b>შეცდომას ვერ ნახავს</b>.</p>
+                <p class="mt-1 text-sm text-[#8ad3a4]">გამოსავალი: აქ საერთოდ არ დაიჭირო — გამომძახებელს უკვე აქვს თავისი try/catch.</p>
+              </div>
+              <div class="border-l-2 border-[#f2a2a2] pl-4">
+                <p class="font-medium">3. მისამართი ხელახლა წერია</p>
+                <p class="mt-1 text-sm text-paper/70">ფაილის თავში უკვე გვაქვს <code class="font-mono">API_URL</code>. ორი წყარო ერთი ჭეშმარიტებისთვის — დომენის შეცვლისას ერთს დაივიწყებ.</p>
+              </div>
+            </div>
+            <div class="mt-5 border-t border-paper/20 pt-4">
+              <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">გასწორებული</p>
+              <pre class="mt-2 font-mono text-[12.5px] leading-[1.8] text-[#8ad3a4]"><code><span class="text-[#569cd6]">async function</span> deleteCar(id) {
+  <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> fetch(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, { method: <span class="text-[#ce9178]">'DELETE'</span> });
+  <span class="text-[#c586c0]">if</span> (!response.ok) <span class="text-[#c586c0]">throw new</span> Error(response.status);
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 22 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Delegation" data-notes="ეს არის ის ადგილი, სადაც ბევრი წყდება: „ღილაკი დავამატე, მაგრამ არ მუშაობს“. მიზეზი ერთია — ღილაკი მაშინ არ არსებობდა, როცა listener დაამატე. აჩვენე დელეგირება და თქვი: ერთი listener მშობელზე, სამუდამოდ.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>Event delegation</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">„ღილაკი<br>დავამატე,<br>არ მუშაობს“</h2>
+      <p class="mt-6 leading-relaxed text-ink-2">
+        API-დან მოსული ღილაკები <b class="text-ink">მოგვიანებით</b> ჩნდება. თუ listener-ს პირდაპირ მათზე დაამატებ,
+        ის მხოლოდ იმ ღილაკებზე იმუშავებს, რომლებიც იმ წამში არსებობდნენ.
+      </p>
+      <div class="mt-8 border-l-2 border-live pl-5">
+        <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">სამსახურში ყოველ თანამშრომელს კი არ ეუბნები „ზარს რომ უპასუხო“ — ერთი მიმღები დგას შესასვლელთან და ყველას მიმართავს.</span></p>
+      </div>
+      <div class="mt-8 border border-rule bg-panel p-5 text-sm text-ink-2">
+        დელეგირება მუშაობს იმიტომ, რომ დაწკაპუნება <b class="text-ink">ამოდის ზემოთ</b> — ღილაკიდან მშობელამდე, მშობლიდან document-მდე. ამას bubbling ჰქვია.
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="flex flex-col bg-panel">
+          <p class="border-b border-rule px-5 py-3 font-mono text-[11px] uppercase tracking-[0.15em] text-del">არ იმუშავებს</p>
+          <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#4ec9b0]">document</span>.<span class="text-[#dcdcaa]">querySelectorAll</span>(<span class="text-[#ce9178]">'.delete-btn'</span>)
+  .<span class="text-[#dcdcaa]">forEach</span>(btn =&gt; {
+    btn.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="text-[#ce9178]">'click'</span>, …);
+  });
+
+<span class="italic text-[#6a9955]">// ეს ხაზი ჩაიწერა მაშინ,</span>
+<span class="italic text-[#6a9955]">// როცა .delete-btn ჯერ არ არსებობდა.</span>
+<span class="italic text-[#6a9955]">// მასივი ცარიელი იყო.</span></code></pre>
+        </div>
+        <div class="flex flex-col bg-panel">
+          <p class="border-b border-rule px-5 py-3 font-mono text-[11px] uppercase tracking-[0.15em] text-get">იმუშავებს ყოველთვის</p>
+          <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12px] leading-[1.85] text-[#d4d4d4]"><code>carsEl.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="text-[#ce9178]">'click'</span>, <span class="text-[#569cd6]">async</span> (event) =&gt; {
+  <span class="text-[#569cd6]">const</span> id = event.<span class="text-[#9cdcfe]">target</span>.<span class="text-[#9cdcfe]">dataset</span>.<span class="text-[#9cdcfe]">id</span>;
+  <span class="text-[#c586c0]">if</span> (!id) <span class="text-[#c586c0]">return</span>;
+
+  <span class="text-[#c586c0]">if</span> (event.target.<span class="text-[#dcdcaa]">classList</span>.<span class="text-[#dcdcaa]">contains</span>(<span class="text-[#ce9178]">'delete-btn'</span>)) …
+  <span class="text-[#c586c0]">if</span> (event.target.<span class="text-[#dcdcaa]">classList</span>.<span class="text-[#dcdcaa]">contains</span>(<span class="text-[#ce9178]">'edit-btn'</span>))   …
+});
+
+<span class="italic text-[#6a9955]">// მშობელი ყოველთვის არსებობს.</span></code></pre>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">data-id="17"</p>
+          <p class="mt-2 text-sm text-ink-2">HTML-ში ჩაწერილი მონაცემი. აქედან ვიგებთ, რომელ მანქანაზეა საუბარი.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">event.target</p>
+          <p class="mt-2 text-sm text-ink-2">ზუსტად ის ელემენტი, რომელსაც დააწკაპუნეს — და არა ის, რომელზეც listener-ია.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">.dataset.id</p>
+          <p class="mt-2 text-sm text-ink-2">ყოველ <code class="font-mono text-[12px]">data-*</code> ატრიბუტს JS-ში <code class="font-mono text-[12px]">dataset</code>-ით კითხულობ.</p>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-5 text-paper">
+        <p class="text-[15px] leading-relaxed">
+          <span class="font-mono text-[#8ad3a4]">event.preventDefault()</span> ფორმაში იმავე ოჯახიდანაა:
+          ის აჩერებს ბრაუზერის default ქცევას — გვერდის გადატვირთვას — რომ ჩვენ თვითონ გავაგზავნოთ მოთხოვნა <code class="font-mono">fetch</code>-ით.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 23 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="უსაფრთხოება" data-notes="ეს პატიოსანი საუბარია. გახსენი ბრაუზერში view-source ან Sources ტაბი და ცოცხლად აჩვენე ჩვენივე API_KEY. არავის ჰგონია, რომ ეს დამალულია — მაგრამ ხშირად არც არავინ ამბობს ხმამაღლა. სასწავლო პროექტში ეს ნორმალურია. რეალურ პროექტში — არა.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>უსაფრთხოება</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">frontend-ში<br>საიდუმლო<br>არ არსებობს</h2>
+      <p class="mt-6 leading-relaxed text-ink-2">
+        ყველაფერი, რაც <code class="font-mono text-[13px]">app.js</code>-შია, მომხმარებლის ბრაუზერამდე მიდის.
+        ესე იგი ის ღიაა. ყოველთვის. ყველასთვის.
+      </p>
+      <div class="mt-8 border-l-2 border-del pl-5">
+        <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">კარის გასაღები ხალიჩის ქვეშ. ის დამალული არ არის — უბრალოდ იმედი გაქვს, რომ არავინ დაიხედავს.</span></p>
+      </div>
+
+      <div class="mt-8 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">სამი ადგილი, სადაც ნებისმიერი ხედავს</p>
+        <ul class="mt-3 space-y-1.5 text-sm text-ink-2">
+          <li>— <b class="text-ink">View Source</b> — ერთი მაუსის მარჯვენა დაწკაპუნება</li>
+          <li>— <b class="text-ink">DevTools → Sources</b> — მთელი შენი JS, ლამაზად</li>
+          <li>— <b class="text-ink">DevTools → Network</b> — ყოველი header, ყოველ მოთხოვნაში</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="border border-del/40 bg-del/5 p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">რას ნიშნავს ეს პრაქტიკულად</p>
+        <p class="mt-3 leading-relaxed">
+          ჩვენი <code class="font-mono text-[13px]">API_KEY</code> სასწავლო გასაღებია — ის სასწავლო მონაცემებს ეკუთვნის და ამიტომ არაფერი ეშინია.
+          მაგრამ იგივე ხაზი გადახდის სისტემის გასაღებით ნიშნავს, რომ <b>ნებისმიერს</b> შეუძლია შენი სახელით ფული დახარჯოს.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-get"><span class="h-1.5 w-1.5 rounded-full bg-get"></span>სწორი გზა #1</p>
+          <p class="mt-2 font-medium">Backend proxy</p>
+          <p class="mt-2 text-sm text-ink-2">შენი სერვერი ინახავს გასაღებს და თვითონ მიმართავს API-ს. ბრაუზერი შენს სერვერს ელაპარაკება, გასაღებს ვერ ხედავს.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-get"><span class="h-1.5 w-1.5 rounded-full bg-get"></span>სწორი გზა #2</p>
+          <p class="mt-2 font-medium">შეზღუდული გასაღები</p>
+          <p class="mt-2 text-sm text-ink-2">ბევრი სერვისი გაძლევს public key-ს, რომელიც მხოლოდ კითხვას უშვებს და მხოლოდ შენი დომენიდან.</p>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-put"><span class="h-1.5 w-1.5 rounded-full bg-put"></span>რასაც ხშირად ურევენ</p>
+          <p class="mt-2 font-medium">.env ფაილი</p>
+          <p class="mt-2 text-sm text-ink-2">frontend build-ში <code class="font-mono text-[12px]">.env</code> <b>არ მალავს</b> გასაღებს — ის უბრალოდ ჩაიწერება bundle-ში. მალავს მხოლოდ git-ისგან.</p>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-6 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">წესი, რომელიც ყოველთვის მუშაობს</p>
+        <p class="mt-3 text-lg leading-relaxed">
+          თუ გასაღები ფულს ხარჯავს, მონაცემს შლის ან პირად ინფორმაციას ხსნის — მას
+          <span class="text-[#8ad3a4]">ბრაუზერში ადგილი არ აქვს</span>. სასწავლო პროექტისთვის იმუშავე ღიად,
+          მაგრამ იცოდე, რომ ღიად მუშაობ.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 24 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="CORS" data-notes="CORS-ზე ყველა გაბრაზებულია, სანამ არ გაიგებს, რომ ის ბრაუზერის დაცვაა და არა შენს წინააღმდეგ მიმართული. მთავარი წინადადება, რომელიც უნდა დაიმახსოვრონ: CORS-ს ასწორებს სერვერი, არა შენი კოდი. Postman-ში იმუშავებს, ბრაუზერში არა — ეს არის CORS-ის ხელწერა.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>CORS</p>
+        <h2 class="display mt-3 text-5xl font-semibold">„Blocked by CORS policy“</h2>
+      </div>
+      <p class="max-w-md text-right text-sm text-ink-2">ყველაზე ხშირი შეტყობინება, რომელსაც პირველ API პროექტში ნახავ — და ერთადერთი, რომელსაც შენს კოდში ვერ გაასწორებ.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-12 gap-8 py-8">
+      <div class="col-span-5 flex flex-col justify-center gap-6">
+        <div class="border border-rule bg-panel p-6">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რა ხდება სინამდვილეში</p>
+          <ol class="mt-4 space-y-3 text-[15px]">
+            <li class="flex gap-3"><span class="font-mono text-live">1</span><span>შენი გვერდი <code class="font-mono text-[12px]">localhost:5500</code>-ზეა.</span></li>
+            <li class="flex gap-3"><span class="font-mono text-live">2</span><span>API სხვა დომენზეა.</span></li>
+            <li class="flex gap-3"><span class="font-mono text-live">3</span><span>ბრაუზერი მოთხოვნას <b>მაინც აგზავნის</b>.</span></li>
+            <li class="flex gap-3"><span class="font-mono text-live">4</span><span>პასუხიც მოდის — მაგრამ თუ მასში არ წერია <code class="font-mono text-[12px]">Access-Control-Allow-Origin</code>, ბრაუზერი მას <b>შენს კოდს არ გადასცემს</b>.</span></li>
+          </ol>
+        </div>
+        <div class="border-l-2 border-live pl-5">
+          <p class="text-lg leading-snug">ცხოვრებაში: <span class="text-ink-2">დაცვა შენ კი არ გამოწმებს — კლუბს ეკითხება, „ეს ადამიანი შენგან მოვიდა?“ და თუ კლუბი დუმს, შიგნით არ შეგიშვებს.</span></p>
+        </div>
+      </div>
+
+      <div class="col-span-7 flex flex-col justify-center gap-5">
+        <div class="grid grid-cols-2 gap-px bg-rule">
+          <div class="bg-panel p-5">
+            <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">რაც არ ეშველება</p>
+            <ul class="mt-3 space-y-2 text-sm text-ink-2">
+              <li>— header-ის დამატება <code class="font-mono text-[12px]">fetch</code>-ში</li>
+              <li>— <code class="font-mono text-[12px]">mode: 'no-cors'</code> — პასუხს ცარიელს გახდის</li>
+              <li>— ბრაუზერის შეცვლა</li>
+              <li>— თხოვნის გამეორება</li>
+            </ul>
+          </div>
+          <div class="bg-panel p-5">
+            <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">რაც ეშველება</p>
+            <ul class="mt-3 space-y-2 text-sm text-ink-2">
+              <li>— სერვერზე CORS-ის ჩართვა (თუ სერვერი შენია)</li>
+              <li>— საკუთარი backend proxy</li>
+              <li>— API, რომელიც ბრაუზერიდან მუშაობას უშვებს</li>
+              <li>— dev-სერვერის proxy კონფიგურაცია</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="border border-rule bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">როგორ ამოიცნობ CORS-ს ერთი წამში</p>
+          <div class="mt-3 space-y-2 text-[15px]">
+            <p>— კონსოლში წითელი <code class="font-mono text-[13px]">TypeError: Failed to fetch</code></p>
+            <p>— Network ტაბში მოთხოვნა <b>ჩანს</b> და პასუხიც მოვიდა</p>
+            <p>— Postman-ში იგივე მისამართი მშვენივრად მუშაობს</p>
+          </div>
+          <p class="mt-4 border-t border-rule pt-3 text-sm text-ink-2">ეს სამი ერთად ნიშნავს CORS-ს. მარტო Postman-ის ტესტიც კმარა: CORS მხოლოდ ბრაუზერში არსებობს.</p>
+        </div>
+
+        <div class="border border-ink bg-ink p-5 text-paper">
+          <p class="text-[15px] leading-relaxed">
+            <b>რატომ არსებობს:</b> ამის გარეშე ნებისმიერი საიტი, რომელსაც გახსნი, შენი სახელით შეძლებდა
+            შენს ბანკს მიმართოს — შენი cookie-თი, შენი სესიით. CORS არის ის, რაც ამას აჩერებს.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 25 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ბონუსი" data-notes="ეს ორი ხრიკი ლექციის სავალდებულო ნაწილში არ არის, მაგრამ სწორედ ისინი განასხვავებენ სამუშაო კოდს სასწავლოსგან. Promise.all-ზე დაუსვი კითხვა: სამი მოთხოვნა, თითო 400ms — რამდენი წამი? პასუხი: 1.2 წამი რიგში, 0.4 პარალელურად.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ბონუსი</p>
+        <h2 class="display mt-3 text-5xl font-semibold">ორი ხრიკი, რომელიც კოდს პროფესიულს ხდის</h2>
+      </div>
+      <p class="max-w-sm text-right text-sm text-ink-2">არც ერთი არ არის სავალდებულო დავალებისთვის. ორივე შესამჩნევია მაშინვე.</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-6 py-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">01 · Promise.all</p>
+          <p class="mt-2 text-lg">სამი მოთხოვნა რიგში კი არა, ერთდროულად.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-px bg-rule">
+          <div class="bg-panel p-5">
+            <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">რიგში · 1200ms</p>
+            <div class="mt-3 space-y-1.5">
+              <div class="h-3 w-1/3 bg-del/40"></div>
+              <div class="ml-[33%] h-3 w-1/3 bg-del/40"></div>
+              <div class="ml-[66%] h-3 w-1/3 bg-del/40"></div>
+            </div>
+          </div>
+          <div class="bg-panel p-5">
+            <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">პარალელურად · 400ms</p>
+            <div class="mt-3 space-y-1.5">
+              <div class="h-3 w-1/3 bg-get/50"></div>
+              <div class="h-3 w-1/3 bg-get/50"></div>
+              <div class="h-3 w-1/3 bg-get/50"></div>
+            </div>
+          </div>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="italic text-[#6a9955]">// ❌ რიგში — ყოველი ელოდება წინას</span>
+<span class="text-[#569cd6]">const</span> cars   = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getCars</span>();
+<span class="text-[#569cd6]">const</span> brands = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getBrands</span>();
+<span class="text-[#569cd6]">const</span> users  = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getUsers</span>();
+
+<span class="italic text-[#6a9955]">// ✅ ერთდროულად — არც ერთი არ არის დამოკიდებული სხვაზე</span>
+<span class="text-[#569cd6]">const</span> [cars, brands, users] = <span class="text-[#569cd6]">await</span> <span class="text-[#4ec9b0]">Promise</span>.<span class="text-[#dcdcaa]">all</span>([
+  <span class="text-[#dcdcaa]">getCars</span>(), <span class="text-[#dcdcaa]">getBrands</span>(), <span class="text-[#dcdcaa]">getUsers</span>()
+]);</code></pre>
+        <div class="border-t border-rule p-5 text-sm text-ink-2">
+          <b class="text-ink">როდის არა:</b> თუ მეორე მოთხოვნას პირველის შედეგი სჭირდება (მაგ. <code class="font-mono text-[12px]">user.id</code>), მაშინ რიგი აუცილებელია.
+        </div>
+      </div>
+
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="border-b border-rule px-6 py-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">02 · debounce</p>
+          <p class="mt-2 text-lg">ძებნისას ყოველ ასოზე მოთხოვნა არ იგზავნება.</p>
+        </div>
+        <div class="border-b border-rule p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">მომხმარებელი წერს „ლაზანია“</p>
+          <div class="mt-3 flex items-center gap-4 text-sm">
+            <span class="text-del">debounce-ის გარეშე: <b class="font-mono">7 მოთხოვნა</b></span>
+            <span class="text-rule">·</span>
+            <span class="text-get">debounce-ით: <b class="font-mono">1 მოთხოვნა</b></span>
+          </div>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">let</span> timer;
+
+searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="text-[#ce9178]">'input'</span>, () =&gt; {
+  <span class="text-[#dcdcaa]">clearTimeout</span>(timer);            <span class="italic text-[#6a9955]">// წინა გეგმა გააუქმე</span>
+  timer = <span class="text-[#dcdcaa]">setTimeout</span>(() =&gt; {
+    <span class="text-[#dcdcaa]">searchProducts</span>(searchInput.<span class="text-[#9cdcfe]">value</span>);
+  }, <span class="text-[#b5cea8]">400</span>);                        <span class="italic text-[#6a9955]">// 400ms სიჩუმის შემდეგ</span>
+});</code></pre>
+        <div class="border-t border-rule p-5 text-sm text-ink-2">
+          ცხოვრებაში: <b class="text-ink">ლიფტის ღილაკი.</b> ხუთჯერ დაჭერა ლიფტს არ აჩქარებს — უბრალოდ ხუთჯერ ითხოვს.
+          სერვერებს ეს ნამდვილად აღიზიანებთ და <span class="font-mono text-[12px] text-del">429</span>-ს გიბრუნებენ.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 26 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ინსტრუმენტები" data-notes="გახსენი DevTools ცოცხლად და გაიარე ხუთივე სვეტი Network ტაბში. ეს ერთი ტაბი უფრო სწრაფად პასუხობს კითხვაზე „რატომ არ მუშაობს“, ვიდრე ნებისმიერი console.log. სთხოვე დარბაზს, დღესვე დააინსტალირონ Thunder Client ან Postman.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ინსტრუმენტები</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">სანამ<br>console.log-ს<br>დაწერ</h2>
+      <p class="mt-6 leading-relaxed text-ink-2">
+        Network ტაბი ყველა კითხვაზე პასუხობს, რომელსაც <code class="font-mono text-[13px]">console.log</code>-ით სვამ —
+        და უფრო ზუსტად: გაიგზავნა? რა გაიგზავნა? რა დაბრუნდა? რამდენ ხანში?
+      </p>
+
+      <div class="mt-8 space-y-3">
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-medium">DevTools → Network</p>
+          <p class="mt-1 text-sm text-ink-2">უფასო, უკვე გაქვს. <kbd class="border border-rule bg-paper px-1.5 py-0.5 font-mono text-[11px]">F12</kbd> → Network → გვერდის განახლება.</p>
+        </div>
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-medium">Postman / Thunder Client</p>
+          <p class="mt-1 text-sm text-ink-2">API-ს ტესტირება კოდის დაწერამდე. Thunder Client პირდაპირ VS Code-შია.</p>
+        </div>
+        <div class="border border-rule bg-panel p-4">
+          <p class="font-medium">Copy as fetch</p>
+          <p class="mt-1 text-sm text-ink-2">Network-ში მარჯვენა ღილაკი → Copy → Copy as fetch. მზა კოდი, header-ებითურთ.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div class="border border-rule bg-panel">
+        <div class="flex items-center gap-4 border-b border-rule px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.12em]">
+          <span class="text-ink">Network</span><span class="text-ink-2">Console</span><span class="text-ink-2">Sources</span><span class="text-ink-2">Application</span>
+        </div>
+        <div class="grid grid-cols-[1fr_5rem_6rem_5rem_6rem] gap-px bg-rule font-mono text-[12px]">
+          <div class="bg-panel p-3 text-ink-2">Name</div>
+          <div class="bg-panel p-3 text-ink-2">Status</div>
+          <div class="bg-panel p-3 text-ink-2">Method</div>
+          <div class="bg-panel p-3 text-ink-2">Size</div>
+          <div class="bg-panel p-3 text-ink-2">Time</div>
+
+          <div class="bg-paper p-3">products</div>
+          <div class="bg-paper p-3 text-get">200</div>
+          <div class="bg-paper p-3">GET</div>
+          <div class="bg-paper p-3">14.2 kB</div>
+          <div class="bg-paper p-3">312 ms</div>
+
+          <div class="bg-paper p-3">cars</div>
+          <div class="bg-paper p-3 text-get">201</div>
+          <div class="bg-paper p-3">POST</div>
+          <div class="bg-paper p-3">198 B</div>
+          <div class="bg-paper p-3">243 ms</div>
+
+          <div class="bg-paper p-3">cars/9999</div>
+          <div class="bg-paper p-3 text-del">404</div>
+          <div class="bg-paper p-3">DELETE</div>
+          <div class="bg-paper p-3">51 B</div>
+          <div class="bg-paper p-3">88 ms</div>
+
+          <div class="bg-paper p-3 text-del">products</div>
+          <div class="bg-paper p-3 text-del">(failed)</div>
+          <div class="bg-paper p-3">GET</div>
+          <div class="bg-paper p-3">0 B</div>
+          <div class="bg-paper p-3">—</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px bg-rule">
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">სად რას უყურებ</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-ink-2">
+            <li>— <b class="text-ink">Headers</b>: რა გაგზავნე და რა დაბრუნდა</li>
+            <li>— <b class="text-ink">Payload</b>: შენი body — ნამდვილად JSON-ია?</li>
+            <li>— <b class="text-ink">Response</b>: სერვერის ნედლი პასუხი</li>
+            <li>— <b class="text-ink">Timing</b>: სად იკარგება წამები</li>
+          </ul>
+        </div>
+        <div class="bg-panel p-5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">დიაგნოზი ერთი შეხედვით</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-ink-2">
+            <li>— მოთხოვნა <b class="text-ink">არ ჩანს</b> → კოდამდე ვერ მიაღწია</li>
+            <li>— <b class="text-ink">(failed)</b> → CORS ან ინტერნეტი</li>
+            <li>— <b class="text-ink">401 / 403</b> → header ან უფლება</li>
+            <li>— <b class="text-ink">200, მაგრამ ცარიელი ეკრანი</b> → შენი render-ია</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 27 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="შეცდომები" data-notes="ეს სლაიდი დავალების წინ არის განზრახ — ესაა სია, რომელსაც კოდის ჩაბარებამდე გაივლიან. სთხოვე დარბაზს, თითოეულზე ხელი აწიონ, თუ ეს შეცდომა უკვე დაუშვიათ. ხელები ყოველთვის იწევა და ეს ხალხს ამშვიდებს.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>გამართვა</p>
+        <h2 class="display mt-3 text-5xl font-semibold">რვა შეცდომა, რომელსაც ყველა უშვებს</h2>
+      </div>
+      <p class="max-w-sm text-right text-sm text-ink-2">გაიარე ეს სია, სანამ დახმარებას ითხოვ. რვიდან ექვსი შემთხვევა აქ იხსნება.</p>
+    </div>
+
+    <div class="mt-8 grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">01</span><div><p class="font-medium">დაგავიწყდა <code class="font-mono text-[13px]">await</code></p><p class="mt-1 text-sm text-ink-2">კონსოლში <code class="font-mono text-[12px]">Promise { &lt;pending&gt; }</code> ხედავ. ეს არ არის შენი მონაცემი — ეს ჩეკია.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">02</span><div><p class="font-medium">არ შეამოწმე <code class="font-mono text-[13px]">response.ok</code></p><p class="mt-1 text-sm text-ink-2">404-ზე კოდი „წარმატებულ“ ტოტში მიდის და <code class="font-mono text-[12px]">undefined</code>-ს ხატავს.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">03</span><div><p class="font-medium">არასწორი გზა ობიექტში</p><p class="mt-1 text-sm text-ink-2"><code class="font-mono text-[12px]">data.products</code> მაშინ, როცა <code class="font-mono text-[12px]">data.data.products</code>-ია. ჯერ <code class="font-mono text-[12px]">console.log</code>, მერე კოდი.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">04</span><div><p class="font-medium"><code class="font-mono text-[13px]">body</code> ობიექტად</p><p class="mt-1 text-sm text-ink-2"><code class="font-mono text-[12px]">JSON.stringify</code>-ის გარეშე სერვერს <code class="font-mono text-[12px]">"[object Object]"</code> მიდის.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">05</span><div><p class="font-medium">დაგავიწყდა <code class="font-mono text-[13px]">Content-Type</code></p><p class="mt-1 text-sm text-ink-2">POST/PUT გადის, მაგრამ სერვერი 400-ს აბრუნებს — ვერ ხვდება, რომ JSON-ია.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">06</span><div><p class="font-medium">listener ჩატვირთვამდე</p><p class="mt-1 text-sm text-ink-2">ღილაკები API-დან მოგვიანებით ჩნდება. საჭიროა დელეგირება მშობელზე.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">07</span><div><p class="font-medium"><code class="font-mono text-[13px]">preventDefault()</code> არ არის</p><p class="mt-1 text-sm text-ink-2">ფორმა გვერდს გადატვირთავს, მოთხოვნა ნახევრად გაწყვეტილი დარჩება.</p></div></div>
+      <div class="grid grid-cols-[2.5rem_1fr] gap-4 bg-paper p-5"><span class="font-mono text-[13px] text-del">08</span><div><p class="font-medium">ცვლილების შემდეგ სია არ განახლდა</p><p class="mt-1 text-sm text-ink-2">POST გავიდა, ეკრანზე არაფერი. სერვერს ისევ უნდა ჰკითხო: <code class="font-mono text-[12px]">getCars()</code>.</p></div></div>
+    </div>
+
+    <div class="mt-6 border border-ink bg-ink p-5 text-paper">
+      <p class="text-[15px] leading-relaxed">
+        <b>გამართვის თანმიმდევრობა, რომელიც ყოველთვის მუშაობს:</b>
+        <span class="text-[#8ad3a4]">1)</span> Network — გაიგზავნა? &nbsp;
+        <span class="text-[#8ad3a4]">2)</span> Status — რა დაბრუნდა? &nbsp;
+        <span class="text-[#8ad3a4]">3)</span> Response — რა ფორმისაა? &nbsp;
+        <span class="text-[#8ad3a4]">4)</span> და მხოლოდ მერე შენი კოდი.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 28 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="დავალება" data-notes="გაიარე ხმამაღლა სამივე. 1 და 2 სავალდებულოა ყველასთვის, 3 — ვინც უკვე ამთავრებს. თითოეულ დავალებას თან ახლავს ცხოვრებისეული სცენარი — ეს განზრახ არის, რომ კოდი კითხვას პასუხობდეს და არა თავის თავს. ვადა: შემდეგ ლექციამდე.">
+  <div class="flex h-full flex-col px-14 py-10">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>დავალება · ნაწილი 1</p>
+        <h2 class="display mt-3 text-5xl font-semibold">სამი სავარჯიშო რეალური სცენარით</h2>
+      </div>
+      <p class="max-w-xs text-right text-sm text-ink-2">ყოველი დავალება ერთ კითხვას პასუხობს, რომელიც ცხოვრებაში ნამდვილად ისმის.</p>
+    </div>
+
+    <div class="mt-6 grid min-h-0 flex-1 grid-cols-3 gap-px bg-rule">
+      <div class="flex flex-col bg-paper p-6">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-get">დავალება 01 · GET</span>
+          <span class="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-2">30 წუთი</span>
+        </div>
+        <h3 class="display mt-3 text-2xl font-semibold">ხვალ ქოლგა დამჭირდება?</h3>
+        <p class="mt-3 text-sm text-ink-2">დილით ფანჯარასთან მისვლის ნაცვლად გვერდი გიპასუხოს.</p>
+
+        <div class="mt-5 border-l-2 border-get pl-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რა უნდა გააკეთო</p>
+          <ul class="mt-2 space-y-1.5 text-sm">
+            <li>— ერთი <code class="font-mono text-[12px]">fetch</code> ამინდის საჯარო API-ზე (გასაღების გარეშე: <code class="font-mono text-[12px]">open-meteo.com</code>)</li>
+            <li>— აჩვენე დღევანდელი ტემპერატურა და შემდეგი 5 დღე</li>
+            <li>— სამივე მდგომარეობა: იტვირთება / შეცდომა / მონაცემი</li>
+            <li>— <code class="font-mono text-[12px]">response.ok</code>-ის შემოწმება სავალდებულოა</li>
+          </ul>
+        </div>
+
+        <div class="mt-auto border-t border-rule pt-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რას ვამოწმებ</p>
+          <p class="mt-1 text-sm">გამორთე ინტერნეტი და გადატვირთე გვერდი. თუ ცარიელი ეკრანი დაგხვდა — დავალება არ ჩაითვლება.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col bg-paper p-6">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-post">დავალება 02 · GET + query</span>
+          <span class="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-2">45 წუთი</span>
+        </div>
+        <h3 class="display mt-3 text-2xl font-semibold">მენიუ, რომელშიც ძებნა შეიძლება</h3>
+        <p class="mt-3 text-sm text-ink-2">124 პროდუქტი გვაქვს. მომხმარებელს ერთი კონკრეტული უნდა.</p>
+
+        <div class="mt-5 border-l-2 border-post pl-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რა უნდა გააკეთო</p>
+          <ul class="mt-2 space-y-1.5 text-sm">
+            <li>— ჩვენივე <code class="font-mono text-[12px]">restaurantapi</code>-დან პროდუქტების ჩატვირთვა</li>
+            <li>— ძებნის ველი + ფასის მიხედვით დახარისხება</li>
+            <li>— <b>debounce 400ms</b> — ყოველ ასოზე მოთხოვნა არ იგზავნება</li>
+            <li>— „ვერაფერი მოიძებნა“ ცალკე მდგომარეობაა, არა ცარიელი ეკრანი</li>
+          </ul>
+        </div>
+
+        <div class="mt-auto border-t border-rule pt-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რას ვამოწმებ</p>
+          <p class="mt-1 text-sm">Network ტაბი გახსნილი. სიტყვა „ლაზანიას“ აკრეფაზე <b>ერთი</b> მოთხოვნა უნდა გავიდეს, არა შვიდი.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col bg-paper p-6">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-put">დავალება 03 · სრული CRUD</span>
+          <span class="border border-ink bg-ink px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-paper">მთავარი</span>
+        </div>
+        <h3 class="display mt-3 text-2xl font-semibold">სად წავიდა ჩემი ხელფასი?</h3>
+        <p class="mt-3 text-sm text-ink-2">პირადი ხარჯების ჟურნალი. თემა შეგიძლია შეცვალო — მექანიკა იგივეა.</p>
+
+        <div class="mt-5 border-l-2 border-put pl-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რა უნდა გააკეთო</p>
+          <ul class="mt-2 space-y-1.5 text-sm">
+            <li>— საკუთარი <code class="font-mono text-[12px]">mockapi.io</code> რესურსი (უფასო, 2 წუთი)</li>
+            <li>— ოთხივე: <span class="text-get">GET</span> · <span class="text-post">POST</span> · <span class="text-put">PUT</span> · <span class="text-del">DELETE</span></li>
+            <li>— წაშლამდე დადასტურება, ცვლილების შემდეგ სიის განახლება</li>
+            <li>— ჯამი გვერდის თავში, რომელიც ყოველი ცვლილების შემდეგ სწორია</li>
+          </ul>
+        </div>
+
+        <div class="mt-auto border-t border-rule pt-4">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">რას ვამოწმებ</p>
+          <p class="mt-1 text-sm">დავამატებ ჩანაწერს, გავასწორებ, წავშლი და გვერდს გადავტვირთავ. ყველაფერი ადგილზე უნდა იყოს — ესე იგი სერვერზე და არა მეხსიერებაში.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 29 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="დავალება" data-notes="ეს ორი უფრო რთულია და ქულებში ბონუსია. მე-4 დავალება პირდაპირ ჩვენს კოდს ეხება — ვისაც სლაიდი 21 ახსოვს, უკვე იცის პასუხი. მე-5 არის ის, რასაც სამუშაოზე პირველ კვირას სთხოვენ. ბოლოს გაიარე პროექტის მოთხოვნები.">
+  <div class="grid h-full grid-cols-12 gap-8 px-14 py-10">
+    <div class="col-span-7 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>დავალება · ნაწილი 2</p>
+      <h2 class="display mt-3 text-4xl font-semibold">ორი დავალება ბონუსისთვის</h2>
+
+      <div class="mt-6 grid flex-1 gap-px bg-rule">
+        <div class="bg-paper p-5">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">დავალება 04 · რეფაქტორინგი</span>
+            <span class="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-2">20 წუთი</span>
+          </div>
+          <h3 class="display mt-2 text-2xl font-semibold">გაასწორე <code class="font-mono text-xl">deleteCar</code></h3>
+          <p class="mt-2 text-sm text-ink-2">სცენარი: მომხმარებელმა „Delete“ დააჭირა, ინტერნეტი გაწყდა, მანქანა ეკრანიდან გაქრა — მაგრამ სერვერზე დარჩა. მეორე დღეს ისევ იქ არის.</p>
+          <ul class="mt-3 space-y-1 text-sm">
+            <li>— გაასწორე სამივე პრობლემა 21-ე სლაიდიდან</li>
+            <li>— წარუმატებელი წაშლა მომხმარებელს <b>ეკრანზე</b> უნდა ეუბნებოდეს</li>
+            <li>— ღილაკი დაბლოკე, სანამ მოთხოვნა მიდის — ორჯერ დაჭერა არ უნდა შეიძლებოდეს</li>
+          </ul>
+        </div>
+
+        <div class="bg-paper p-5">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-put">დავალება 05 · მდგრადობა</span>
+            <span class="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-2">რთული</span>
+          </div>
+          <h3 class="display mt-2 text-2xl font-semibold">როცა სერვერი დროებით არ პასუხობს</h3>
+          <p class="mt-2 text-sm text-ink-2">სცენარი: მეტროში ხარ, ინტერნეტი წყდება და ბრუნდება. აპლიკაცია არ უნდა გატყდეს.</p>
+          <ul class="mt-3 space-y-1 text-sm">
+            <li>— წარუმატებელი მოთხოვნა თავად გაიმეორე 2-ჯერ, პაუზით (<code class="font-mono text-[12px]">setTimeout</code>)</li>
+            <li>— მესამე წარუმატებლობის შემდეგ — „სცადე თავიდან“ ღილაკი</li>
+            <li>— <span class="font-mono text-[12px] text-del">429</span>-ზე <b>არ</b> გაიმეორო მაშინვე — ეს ნიშნავს „ძალიან ბევრს ითხოვ“</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>საბოლოო პროექტი</p>
+      <h2 class="display mt-3 text-4xl font-semibold">მოთხოვნები</h2>
+      <p class="mt-3 text-sm text-ink-2">ეს სია პირდაპირ <code class="font-mono text-[12px]">app.js</code>-ის ბოლოდანაა.</p>
+
+      <ol class="mt-5 grid flex-1 content-start gap-px bg-rule">
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">1</span><span class="text-sm">მინიმუმ <b>4 გვერდი</b></span></li>
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">2</span><span class="text-sm">Burger menu მობილურზე</span></li>
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">3</span><span class="text-sm">Dark / light თემა</span></li>
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">4</span><span class="text-sm">API — <span class="text-get">GET</span> · <span class="text-post">POST</span> · <span class="text-put">PUT</span> · <span class="text-del">DELETE</span></span></li>
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">5</span><span class="text-sm">Register · Contact · Dashboard</span></li>
+        <li class="flex items-center gap-4 bg-paper p-3.5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">6</span><span class="text-sm">პროექტის ბმული (GitHub Pages / Netlify)</span></li>
+      </ol>
+
+      <div class="mt-5 border border-ink bg-ink p-5 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">რჩევა</p>
+        <p class="mt-2 text-[15px] leading-relaxed">
+          დაიწყე Dashboard-ით. თუ CRUD მუშაობს, დანარჩენი ექვსი მოთხოვნიდან ხუთი
+          <span class="text-[#8ad3a4]">HTML და CSS-ია</span> — და ის უკვე იცი.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 30 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="შეჯამება" data-notes="დაასრულე ერთი წინადადებით და გააჩერე პაუზა. მერე გადადი კითხვებზე. თუ დრო რჩება, დაუბრუნდი 17-ე სლაიდს და კიდევ ერთხელ გაუშვი ცოცხალი მოთხოვნა — ამჯერად მათ ათქმევინე, რა მოხდება.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-6 flex flex-col justify-center">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>შეჯამება</p>
+      <h2 class="display mt-6 text-[4vw] leading-[1.1] font-semibold">API-ს გამოყენება<br>არის ერთი კითხვის<br>ოთხჯერ დასმა.</h2>
+      <div class="mt-8 h-px w-32 bg-live/40"></div>
+      <p class="mt-8 max-w-lg text-lg leading-relaxed text-ink-2">
+        რას ვითხოვ? სად? როგორ გავიგებ, რომ გამოვიდა? და რას ვაჩვენებ, თუ არ გამოვიდა?
+        დანარჩენი — სინტაქსია, რომელსაც დოკუმენტაციაში ნახავ.
+      </p>
+    </div>
+
+    <div class="col-span-6 flex flex-col justify-center gap-px bg-rule">
+      <div class="bg-paper p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">01</p>
+        <p class="mt-2 text-lg">მოთხოვნას ოთხი ნაწილი აქვს: <b>მეთოდი, URL, headers, body</b>. სულ ესაა.</p>
+      </div>
+      <div class="bg-paper p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">02</p>
+        <p class="mt-2 text-lg"><code class="font-mono">fetch</code> 404-ზე შეცდომას <b>არ</b> აგდებს. <code class="font-mono">response.ok</code> შენი პასუხისმგებლობაა.</p>
+      </div>
+      <div class="bg-paper p-6">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">03</p>
+        <p class="mt-2 text-lg">ყოველ მოთხოვნას <b>ოთხი მდგომარეობა</b> აქვს. სამი მათგანი მომხმარებელს არ უნდა დაემალოს.</p>
+      </div>
+      <div class="bg-ink p-6 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-paper/50">04</p>
+        <p class="mt-2 text-lg">frontend-ში საიდუმლო არ არსებობს. თუ გასაღები კოდშია, ის ღიაა.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 31 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full bg-ink text-paper" data-dark data-section="მადლობა" data-notes="ეს სლაიდი მთელი Q&A-ის განმავლობაში დატოვე გახსნილი. თუ არავინ იწყებს, ექვსი თემიდან ერთი თვითონ აიღე და ხმამაღლა უპასუხე. პასუხის დროს O-თი ნებისმიერ სლაიდზე დაბრუნდები.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-7 flex flex-col justify-center">
+      <h2 class="display text-[6vw] leading-[1] font-semibold">გმადლობთ<br>ყურადღებისთვის.</h2>
+      <div class="mt-8 h-px w-32 bg-paper/30"></div>
+      <p class="mt-8 max-w-lg text-lg leading-relaxed text-paper/70">
+        კითხვები? დაიწყეთ იმით, რაც დღეს ყველაზე ბუნდოვანი დარჩა —
+        ხშირად სწორედ ის კითხვაა, რომელიც სხვასაც აქვს.
+      </p>
+    </div>
+
+    <div class="col-span-5 flex flex-col justify-center">
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">თემები, რომლებზეც სიამოვნებით ვისაუბრებ</p>
+      <ul class="mt-5 grid gap-px bg-paper/15">
+        <li class="bg-ink p-4 text-[15px]">როგორ ავირჩიო API დოკუმენტაციის მიხედვით</li>
+        <li class="bg-ink p-4 text-[15px]">JWT და login — რით განსხვავდება API key-სგან</li>
+        <li class="bg-ink p-4 text-[15px]">როდის სჭირდება პროექტს საკუთარი backend</li>
+        <li class="bg-ink p-4 text-[15px]">REST vs GraphQL — და რატომ არ გვჭირდება ჯერ</li>
+        <li class="bg-ink p-4 text-[15px]">pagination: როცა 10 000 ჩანაწერია</li>
+        <li class="bg-ink p-4 text-[15px]">როგორ ვტესტოთ კოდი, რომელიც ქსელს ელოდება</li>
+      </ul>
+      <p class="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/40">
+        <kbd class="border border-paper/30 px-1.5 py-0.5">O</kbd> — ყველა სლაიდი ·
+        <kbd class="border border-paper/30 px-1.5 py-0.5">?</kbd> — კლავიშები
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer id="footerBar" class="fixed inset-x-0 bottom-0 z-40 flex h-11 items-center justify-between border-t border-rule bg-panel px-6 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">
+  <div class="flex items-center gap-4">
+    <span id="fSection" class="text-ink"></span>
+    <span class="text-rule">/</span>
+    <span id="fIndex"></span>
+  </div>
+  <div class="flex items-center gap-4">
+    <span class="hidden md:inline">ქსელი</span>
+    <span id="fNet" class="border border-ink bg-ink px-2 py-0.5 text-paper">online</span>
+    <span class="text-rule">·</span>
+    <button id="btnNotes" class="hover:text-ink">N ჩანაწერები</button>
+    <button id="btnXray" class="hover:text-ink">X x-ray</button>
+    <button id="btnGrid" class="hover:text-ink">O მიმოხილვა</button>
+  </div>
+</footer>
+
+<aside id="notes" class="fixed inset-x-0 bottom-11 z-40 hidden max-h-[38vh] overflow-auto border-t border-ink bg-ink px-6 py-5 text-paper">
+  <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ლექტორის ჩანაწერები</p>
+  <p id="notesBody" class="mt-2 max-w-4xl text-[15px] leading-relaxed"></p>
+</aside>
+
+<div id="overview" class="fixed inset-0 z-50 hidden overflow-auto bg-paper/97 p-10 backdrop-blur">
+  <div class="mb-6 flex items-end justify-between border-b border-rule pb-4">
+    <h2 class="display text-3xl font-semibold">ყველა სლაიდი</h2>
+    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">დააკლიკე გადასასვლელად · Esc დახურვისთვის</p>
+  </div>
+  <div id="overviewGrid" class="grid grid-cols-5 gap-px bg-rule"></div>
+</div>
+
+<div id="xray" class="pointer-events-none fixed z-50 hidden max-w-md border border-live bg-ink px-3 py-2 font-mono text-[12px] leading-relaxed text-[#8ad3a4] shadow-lg"></div>
+
+<div id="help" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/70 p-10">
+  <div class="w-full max-w-lg border border-ink bg-paper p-8">
+    <h2 class="display text-3xl font-semibold">კლავიშები</h2>
+    <dl class="mt-6 space-y-3 font-mono text-[13px]">
+      <div class="flex gap-4"><dt class="w-24 text-live">← → space</dt><dd class="text-ink-2">წინა / შემდეგი სლაიდი</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">home end</dt><dd class="text-ink-2">პირველი / ბოლო სლაიდი</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">O</dt><dd class="text-ink-2">ყველა სლაიდის მიმოხილვა</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">N</dt><dd class="text-ink-2">ამ სლაიდის ჩანაწერები</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">X</dt><dd class="text-ink-2">x-ray: კურსორით წაიკითხე კლასები</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">F</dt><dd class="text-ink-2">fullscreen</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">?</dt><dd class="text-ink-2">ეს პანელი</dd></div>
+    </dl>
+    <p class="mt-6 border-t border-rule pt-4 text-sm text-ink-2">URL-ში სლაიდის ნომერი ინახება, ასე რომ გვერდის გადატვირთვა ან ნებისმიერ სლაიდზე ბმულის გაზიარება შეგიძლია.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const bar = document.getElementById('bar');
+  const fSection = document.getElementById('fSection');
+  const fIndex = document.getElementById('fIndex');
+  const footer = document.getElementById('footerBar');
+  const fNet = document.getElementById('fNet');
+  const notes = document.getElementById('notes');
+  const notesBody = document.getElementById('notesBody');
+  const overview = document.getElementById('overview');
+  const help = document.getElementById('help');
+  let i = 0;
+
+  const titleOf = s => (s.querySelector('h1, h2')?.textContent || 'Slide').replace(/\s+/g, ' ').trim();
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('is-active', k === i));
+    const s = slides[i];
+    fSection.textContent = s.dataset.section || '';
+    fIndex.textContent = String(i + 1).padStart(2, '0') + ' / ' + slides.length;
+    notesBody.textContent = s.dataset.notes || 'ამ სლაიდზე ჩანაწერი არ არის.';
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (i + 1));
+
+    // ინვერსიულ სლაიდს deck-ის ქრომიც თან მიჰყვება
+    const dark = s.hasAttribute('data-dark');
+    const swap = (el, on, off) => { el.classList.add(...on); el.classList.remove(...off); };
+    swap(footer, dark ? ['bg-ink','text-paper/60','border-ink'] : ['bg-panel','text-ink-2','border-rule'],
+                 dark ? ['bg-panel','text-ink-2','border-rule'] : ['bg-ink','text-paper/60','border-ink']);
+    swap(fNet,   dark ? ['bg-paper','text-ink','border-paper'] : ['bg-ink','text-paper','border-ink'],
+                 dark ? ['bg-ink','text-paper','border-ink'] : ['bg-paper','text-ink','border-paper']);
+    swap(bar,    dark ? ['bg-paper'] : ['bg-ink'], dark ? ['bg-ink'] : ['bg-paper']);
+    swap(fSection, dark ? ['text-paper'] : ['text-ink'], dark ? ['text-ink'] : ['text-paper']);
+  }
+
+  // ── მიმოხილვა ────────────────────────────────────────────────────
+  document.getElementById('overviewGrid').innerHTML = slides.map((s, k) => `
+    <button data-go="${k}" class="bg-paper p-4 text-left hover:bg-ink hover:text-paper">
+      <span class="font-mono text-[11px] text-live">${String(k + 1).padStart(2, '0')}</span>
+      <span class="mt-2 block text-sm leading-snug">${titleOf(s)}</span>
+    </button>`).join('');
+  overview.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]');
+    if (b) { show(+b.dataset.go); overview.classList.add('hidden'); }
+    else if (e.target === overview) overview.classList.add('hidden');
+  });
+
+  const toggle = el => el.classList.toggle('hidden');
+  document.getElementById('btnNotes').onclick = () => toggle(notes);
+  document.getElementById('btnGrid').onclick  = () => toggle(overview);
+  document.getElementById('btnXray').onclick  = () => document.body.classList.toggle('xray');
+
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === ' ' || k === 'PageDown') { e.preventDefault(); show(i + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(slides.length - 1);
+    else if (k === 'n' || k === 'N') toggle(notes);
+    else if (k === 'o' || k === 'O') toggle(overview);
+    else if (k === 'x' || k === 'X') document.body.classList.toggle('xray');
+    else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (k === '?') { help.classList.toggle('hidden'); help.classList.toggle('flex'); }
+    else if (k === 'Escape') { overview.classList.add('hidden'); help.classList.add('hidden'); help.classList.remove('flex'); document.body.classList.remove('xray'); }
+  });
+
+  // ── x-ray inspector ──────────────────────────────────────────────
+  const xray = document.getElementById('xray');
+  document.addEventListener('mousemove', e => {
+    if (!document.body.classList.contains('xray')) { xray.classList.add('hidden'); return; }
+    const el = e.target.closest('[class]');
+    if (!el || !el.className || typeof el.className !== 'string') { xray.classList.add('hidden'); return; }
+    xray.textContent = '<' + el.tagName.toLowerCase() + ' class="' + el.className.trim() + '">';
+    xray.classList.remove('hidden');
+    xray.style.left = Math.min(e.clientX + 16, innerWidth - xray.offsetWidth - 12) + 'px';
+    xray.style.top  = Math.min(e.clientY + 16, innerHeight - xray.offsetHeight - 12) + 'px';
+  });
+
+  // ── flip cards ───────────────────────────────────────────────────
+  document.querySelectorAll('[data-flip]').forEach(card => {
+    const flip = () => card.classList.toggle('is-flipped');
+    card.addEventListener('click', flip);
+    // stopPropagation — თორემ იგივე space დეკის ნავიგაციასაც გაუშვებდა და სლაიდიც გადაიდებოდა
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); flip(); }
+    });
+  });
+
+  // ── 06 · URL builder ─────────────────────────────────────────────
+  const urlLab = document.getElementById('urlLab');
+  if (urlLab) {
+    const out = document.getElementById('urlQuery');
+    const count = document.getElementById('urlCount');
+    const codeOut = document.getElementById('urlCode');
+    const btns = [...urlLab.querySelectorAll('[data-q]')];
+    const on = new Set();
+
+    const draw = () => {
+      // თანმიმდევრობა ფიქსირებულია, რომ მისამართი ყოველთვის ერთნაირად აეწყოს
+      const parts = btns.map(b => b.dataset.q).filter(q => on.has(q));
+      out.textContent = parts.length ? '?' + parts.join('&') : '';
+
+      let n = 124;
+      if (on.has('category=pizza')) n = 22;
+      if (on.has('minPrice=10')) n = Math.round(n * 0.6);
+      if (on.has('limit=5')) n = Math.min(n, 5);
+      count.textContent = n;
+
+      codeOut.textContent = parts.length
+        ? "fetch(`${API_URL}?" + parts.join('&') + "`)"
+        : 'fetch(API_URL)';
+
+      btns.forEach(b => b.classList.toggle('is-on', on.has(b.dataset.q)));
+    };
+
+    btns.forEach(b => b.onclick = () => {
+      on.has(b.dataset.q) ? on.delete(b.dataset.q) : on.add(b.dataset.q);
+      draw();
+    });
+    draw();
+  }
+
+  // ── 07 · HTTP methods ────────────────────────────────────────────
+  const methodLab = document.getElementById('methodLab');
+  if (methodLab) {
+    const M = {
+      GET: {
+        color: '#2e7d4f', title: 'წაკითხვა',
+        desc: 'ითხოვს მონაცემს და არაფერს ცვლის. ყველაზე ხშირი მოთხოვნა ინტერნეტში — ყოველი გახსნილი გვერდი GET-ია.',
+        real: 'მენიუს გადაშლა რესტორანში. რამდენჯერაც არ უნდა გადაშალო, სამზარეულოში არაფერი შეიცვლება.',
+        idem: 'არაფერი. GET უსაფრთხოა — ასჯერ გაუშვი, შედეგი იგივეა. სწორედ ამიტომ შეუძლია ბრაუზერს მისი ქეშირება.',
+        status: '200 OK',
+        code: '<span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL);\n<span class="text-[#569cd6]">const</span> products = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();\n\n<span class="italic text-[#6a9955]">// method არ ვწერთ — GET default-ია</span>'
+      },
+      POST: {
+        color: '#1f6fb2', title: 'შექმნა',
+        desc: 'აგზავნის ახალ მონაცემს და სთხოვს სერვერს, შექმნას ახალი ჩანაწერი. id-ს სერვერი თვითონ ანიჭებს.',
+        real: 'შეკვეთის გაკეთება. ერთი შეკვეთა — ერთი კერძი.',
+        idem: '⚠️ ორი ჩანაწერი. POST ერთადერთია, რომლის გამეორებაც საშიშია — აქედან მოდის ყველა „ორმაგი გადახდის“ ისტორია. ამიტომ იბლოკება ღილაკი გაგზავნის დროს.',
+        status: '201 Created',
+        code: '<span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {\n  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">\'POST\'</span>,\n  <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">\'Content-Type\'</span>: <span class="text-[#ce9178]">\'application/json\'</span> },\n  <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>(car),\n});'
+      },
+      PUT: {
+        color: '#b4741f', title: 'ცვლილება',
+        desc: 'ცვლის არსებულ ჩანაწერს. მისამართში აუცილებლად id-ია — ის ამბობს, რომელს ვცვლით.',
+        real: 'შეკვეთის შეცვლა: „მარგარიტა კი არა, ლაზანია“. მაგიდა იგივეა, კერძი — ახალი.',
+        idem: 'არაფერი ცუდი. ხუთჯერ გაუშვი — შედეგი ერთი და იგივეა, რადგან საბოლოო მდგომარეობას ადგენ და არა ცვლილებას.',
+        status: '200 OK',
+        code: '<span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, {\n  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">\'PUT\'</span>,\n  <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">\'Content-Type\'</span>: <span class="text-[#ce9178]">\'application/json\'</span> },\n  <span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">JSON</span>.<span class="text-[#dcdcaa]">stringify</span>(car),\n});'
+      },
+      DELETE: {
+        color: '#b3352c', title: 'წაშლა',
+        desc: 'შლის ჩანაწერს. body არ სჭირდება — მისამართში id უკვე ყველაფერს ამბობს.',
+        real: 'შეკვეთის გაუქმება. ერთადერთი მოქმედება, რომლის უკან დაბრუნებაც აღარ შეიძლება.',
+        idem: 'პირველად წაიშლება, მეორედ 404 დაბრუნდება. კატასტროფა არ არის, მაგრამ მომხმარებელს დადასტურება მაინც ჰკითხე.',
+        status: '200 OK / 204 No Content',
+        code: '<span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, {\n  <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">\'DELETE\'</span>,\n});\n\n<span class="italic text-[#6a9955]">// body არ არის. headers არ არის.</span>'
+      },
+    };
+
+    const head = document.getElementById('mHead');
+    const btns = [...methodLab.querySelectorAll('[data-m]')];
+
+    function pick(name) {
+      const m = M[name];
+      head.style.borderColor = m.color;
+      document.getElementById('mLabel').textContent = name;
+      document.getElementById('mLabel').style.color = m.color;
+      document.getElementById('mTitle').textContent = m.title;
+      document.getElementById('mDesc').textContent = m.desc;
+      document.getElementById('mReal').textContent = m.real;
+      document.getElementById('mIdem').textContent = m.idem;
+      document.getElementById('mCode').innerHTML = m.code;
+      document.getElementById('mStatus').textContent = m.status;
+      btns.forEach(b => {
+        const active = b.dataset.m === name;
+        b.classList.toggle('is-on', active);
+        b.style.borderColor = active ? M[b.dataset.m].color : '';
+        b.querySelector('.m-tag').style.color = M[b.dataset.m].color;
+      });
+    }
+    btns.forEach(b => b.onclick = () => pick(b.dataset.m));
+    pick('GET');
+  }
+
+  // ── 08 · სტატუს კოდები ───────────────────────────────────────────
+  const codeLab = document.getElementById('codeLab');
+  if (codeLab) {
+    const G = '#2e7d4f', Y = '#b4741f', R = '#b3352c', B = '#1f6fb2';
+    const C = {
+      '200': ['OK', G, 'მოთხოვნა შესრულდა და პასუხში მონაცემია.', 'არაფერი — ზუსტად ეს გინდოდა.', '„აი, ბრძანეთ.“'],
+      '201': ['Created', G, 'ახალი ჩანაწერი შეიქმნა. POST-ის ნორმალური პასუხი — სხეულში ჩვეულებრივ ახალი id-ია.', 'აიღე დაბრუნებული ობიექტი — მასში უკვე არის სერვერის მიცემული id.', '„ჩაგწერეთ. აი თქვენი ნომერი.“'],
+      '204': ['No Content', G, 'შესრულდა, მაგრამ დასაბრუნებელი არაფერია. DELETE-ის ხშირი პასუხი.', '⚠️ არ გამოიძახო response.json() — ცარიელ სხეულზე ის შეცდომას აგდებს.', '„გავაკეთე. სათქმელი არაფერია.“'],
+      '304': ['Not Modified', B, 'არაფერი შეცვლილა ბოლო მოთხოვნის შემდეგ — გამოიყენე ქეშირებული ასლი.', 'არაფერი. ბრაუზერი ამას თვითონ აგვარებს.', '„იგივეა, რაც გუშინ იყო.“'],
+      '400': ['Bad Request', R, 'სერვერმა ვერ გაიგო მოთხოვნა. თითქმის ყოველთვის body ან Content-Type არის დამნაშავე.', 'გახსენი Network → Payload. ნამდვილად JSON გაგზავნე? JSON.stringify დაწერე?', '„ბლანკი არასწორად შეავსეთ.“'],
+      '401': ['Unauthorized', R, 'ვინ ხარ — არ ვიცი. გასაღები ან ტოკენი აკლია, არასწორია ან ვადაგასულია.', 'შეამოწმე header-ის სახელი და მნიშვნელობა. ტოკენი ხომ არ ამოიწურა?', '„პრაპუსკის გარეშე ვერ შემოხვალთ.“'],
+      '403': ['Forbidden', R, 'ვიცი ვინ ხარ, მაგრამ ამის უფლება არ გაქვს. 401-ისგან განსხვავებით, გასაღების შეცვლა არ უშველის.', 'აქ კოდი არ დაგეხმარება — უფლებები სერვერზეა.', '„პრაპუსკი გაქვთ, მაგრამ ეს სართული თქვენი არაა.“'],
+      '404': ['Not Found', R, 'ასეთი მისამართი ან ჩანაწერი არ არსებობს. ყველაზე ხშირი შეცდომა დამწყებთათვის.', 'ჯერ URL-ს დააკვირდი (ხომ არ დააკლდა /api?), მერე id-ს.', '„ასეთი მისამართი არ არსებობს.“'],
+      '409': ['Conflict', Y, 'კონფლიქტი არსებულ მონაცემთან — მაგალითად, ასეთი email უკვე დარეგისტრირებულია.', 'აჩვენე მომხმარებელს კონკრეტული მიზეზი, არა ზოგადი „შეცდომა“.', '„ეს ადგილი უკვე დაკავებულია.“'],
+      '422': ['Unprocessable', Y, 'მოთხოვნა გასაგებია, მაგრამ მნიშვნელობები არ გამოდგება — წელი 3000-ში, ფასი უარყოფითი.', 'პასუხის სხეულში ჩვეულებრივ წერია, რომელი ველია პრობლემური. აჩვენე ის ველთან.', '„ბლანკი სწორად შეავსეთ, მაგრამ თარიღი მომავალშია.“'],
+      '429': ['Too Many Requests', Y, 'ძალიან ბევრს ითხოვ, ძალიან სწრაფად. ეს ჩვეულებრივ debounce-ის არქონას ნიშნავს.', 'დაელოდე (პასუხში ხშირად წერია Retry-After) და მერე სცადე. მაშინვე ნუ გაიმეორებ.', '„ლიფტის ღილაკს ნუ აჭერთ ხუთჯერ.“'],
+      '500': ['Internal Server Error', R, 'სერვერზე რაღაც გატყდა. შენი ბრალი ჩვეულებრივ არ არის — მაგრამ არც ყოველთვის.', 'გაიმეორე. თუ მეორდება — დაუკავშირდი API-ს ავტორს და გაუგზავნე კონკრეტული მოთხოვნა.', '„სამზარეულოში ღუმელი გაფუჭდა.“'],
+      '502': ['Bad Gateway', R, 'შუამავალმა (proxy, load balancer) ვერ მიაღწია რეალურ სერვერამდე.', 'დაელოდე და გაიმეორე. ჩვეულებრივ დროებითია.', '„მიმტანი მივიდა, სამზარეულო დაკეტილი დახვდა.“'],
+      '503': ['Service Unavailable', R, 'სერვისი დროებით მიუწვდომელია — გადატვირთვა, სამუშაოები, გადატვირთულობა.', 'გაიმეორე პაუზით. სწორედ აქ არის retry-ს ლოგიკა ყველაზე გამართლებული.', '„დღეს დაკეტილია. ხვალ მობრძანდით.“'],
+      '0':   ['Failed to fetch', R, 'სტატუსი საერთოდ არ არსებობს — პასუხი შენს კოდამდე არ მოვიდა. ეს fetch-ის ერთადერთი ნამდვილი შეცდომაა.', 'სამი ვარიანტია: CORS, ინტერნეტი, ან არასწორად დაწერილი დომენი. Network ტაბი გეტყვის რომელი.', '„მიმტანი საერთოდ არ მოვიდა.“'],
+    };
+
+    const head = document.getElementById('cHead');
+    const btns = [...codeLab.querySelectorAll('[data-c]')];
+
+    function pick(n) {
+      const [name, color, desc, fix, real] = C[n];
+      head.style.borderColor = color;
+      const num = document.getElementById('cNum');
+      num.textContent = n === '0' ? '—' : n;
+      num.style.color = color;
+      document.getElementById('cName').textContent = name;
+      document.getElementById('cName').style.color = color;
+      document.getElementById('cDesc').textContent = desc;
+      document.getElementById('cFix').textContent = fix;
+      document.getElementById('cReal').textContent = real;
+      btns.forEach(b => b.classList.toggle('is-on', b.dataset.c === n));
+    }
+    btns.forEach(b => b.onclick = () => pick(b.dataset.c));
+    pick('200');
+  }
+
+  // ── 10 · JSON path ───────────────────────────────────────────────
+  const jsonLab = document.getElementById('jsonLab');
+  if (jsonLab) {
+    const J = [
+      ['resp_obj — მთელი პასუხი', 'ობიექტი, რომელიც .json()-მა დაგვიბრუნა. ეს ჯერ არ არის შენი მონაცემი — ეს არის კონვერტი.'],
+      ['.data — შიგთავსი', 'ბევრი API პასუხს ახვევს: success, data, meta. თავად სასარგებლო ნაწილი აქ იწყება.'],
+      ['.products — მასივი', 'აი, საბოლოოდ სია, რომელზეც map გადის. სწორედ ეს გადაეცემა renderProducts-ს.'],
+    ];
+    const btns = [...jsonLab.querySelectorAll('[data-p]')];
+    const lines = [...jsonLab.querySelectorAll('[data-j]')];
+    function pick(k) {
+      document.getElementById('jTitle').textContent = J[k][0];
+      document.getElementById('jDesc').textContent = J[k][1];
+      btns.forEach(b => b.classList.toggle('is-on', +b.dataset.p === k));
+      lines.forEach(l => l.classList.toggle('is-on', +l.dataset.j === k));
+    }
+    btns.forEach(b => b.onclick = () => pick(+b.dataset.p));
+    pick(2);
+  }
+
+  // ── 11 · პროგრესული კოდი ─────────────────────────────────────────
+  document.querySelectorAll('[data-cbuild]').forEach(box => {
+    const steps = JSON.parse(box.querySelector('[data-cbuild-steps]').textContent);
+    const lines = [...box.querySelectorAll('.cl')];
+    const note = box.querySelector('[data-cbuild-note]');
+    const idx = box.querySelector('[data-cbuild-index]');
+    let s = 0;
+    const draw = () => {
+      lines.forEach(l => {
+        const n = +l.dataset.line;
+        l.hidden = n > s;
+        l.classList.toggle('is-new', n === s && s > 0);
+      });
+      note.textContent = steps[s].note;
+      idx.textContent = 'ნაბიჯი ' + s + ' / ' + (steps.length - 1);
+    };
+    box.querySelector('[data-cbuild-next]').onclick = () => { s = Math.min(steps.length - 1, s + 1); draw(); };
+    box.querySelector('[data-cbuild-prev]').onclick = () => { s = Math.max(0, s - 1); draw(); };
+    draw();
+  });
+
+  // ── 12 · ასინქრონული თანმიმდევრობა ───────────────────────────────
+  const asyncBtn = document.getElementById('asyncRun');
+  if (asyncBtn) {
+    const out = document.getElementById('asyncOut');
+    let running = false;
+    const line = (text, color, ms) => {
+      const el = document.createElement('div');
+      el.className = 'log-line';
+      el.innerHTML = `<span style="color:${color}">${text}</span>` +
+        (ms != null ? ` <span style="color:#6a9955">// +${ms}ms</span>` : '');
+      out.appendChild(el);
+    };
+    asyncBtn.onclick = () => {
+      if (running) return;
+      running = true;
+      out.innerHTML = '';
+      const t0 = performance.now();
+      line('1 — შევუკვეთე', '#d4d4d4', 0);
+      const pending = document.createElement('div');
+      pending.className = 'log-line';
+      pending.innerHTML = '<span style="color:#6a9955">// fetch გაეშვა… კოდი არ ჩერდება</span>';
+      out.appendChild(pending);
+      line('2 — დავჯექი მაგიდასთან', '#d4d4d4', Math.round(performance.now() - t0));
+      setTimeout(() => {
+        line('3 — ყავა მოვიდა', '#8ad3a4', Math.round(performance.now() - t0));
+        running = false;
+      }, 1200);
+    };
+  }
+
+  // ── 17 · ცოცხალი მოთხოვნა ────────────────────────────────────────
+  const liveLab = document.getElementById('liveLab');
+  if (liveLab) {
+    const LIVE_URL = 'https://6a984f9b7160beda2292e15c.mockapi.io/cars';
+    const DEMO = [
+      { id: '1', name: 'Ferrari 250 GTO', manufacturer: 'Ferrari', year: 1963, priceUSD: 70000000 },
+      { id: '2', name: 'Porsche 911 Carrera RS', manufacturer: 'Porsche', year: 1973, priceUSD: 180000 },
+      { id: '3', name: 'Toyota Supra MK4', manufacturer: 'Toyota', year: 1994, priceUSD: 120000 },
+    ];
+    const btn = document.getElementById('liveSend');
+    const chip = document.getElementById('liveChip');
+    const hint = document.getElementById('liveHint');
+    const server = document.getElementById('liveServer');
+    const elStatus = document.getElementById('liveStatus');
+    const elStatusText = document.getElementById('liveStatusText');
+    const elTime = document.getElementById('liveTime');
+    const elCount = document.getElementById('liveCount');
+    const elType = document.getElementById('liveType');
+    const elNote = document.getElementById('liveNote');
+    const elBody = document.getElementById('liveBody');
+    let busy = false;
+
+    const fly = (dir, text, color) => {
+      chip.textContent = text;
+      chip.style.borderColor = color;
+      chip.style.color = color;
+      chip.classList.remove('hidden', 'fly-req', 'fly-res');
+      // სიგანე მხოლოდ hidden-ის მოხსნის შემდეგ იზომება, თორემ 0 იქნებოდა
+      const lane = chip.parentElement;
+      chip.style.setProperty('--fly', Math.max(0, lane.clientWidth - chip.offsetWidth) + 'px');
+      void chip.offsetWidth;                       // reflow — ანიმაცია თავიდან დაიწყოს
+      chip.classList.add(dir === 'out' ? 'fly-req' : 'fly-res');
+    };
+
+    btn.onclick = async () => {
+      if (busy) return;
+      busy = true;
+      hint.classList.add('hidden');
+      elStatus.textContent = '…';
+      elStatus.style.color = '';
+      elStatusText.textContent = 'ველოდებით';
+      elTime.textContent = elCount.textContent = elType.textContent = '—';
+      elNote.textContent = '';
+      elBody.textContent = '// მოთხოვნა გზაშია…';
+      fly('out', 'GET /cars', '#1e33e0');
+      server.classList.add('thinking');            // სერვერი „ფიქრობს" სანამ პასუხი მოდის
+
+      const t0 = performance.now();
+      let ok = false, status = 0, data = null, fallback = false;
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 6000);
+        const response = await fetch(LIVE_URL, { signal: controller.signal });
+        clearTimeout(timer);
+        status = response.status;
+        ok = response.ok;
+        if (ok) data = await response.json();
+      } catch (error) {
+        fallback = true;                            // ინტერნეტი, CORS ან timeout
+      }
+
+      const ms = Math.round(performance.now() - t0);
+      // ანიმაციამ სულ მცირე ერთი წამი უნდა იცოცხლოს, თორემ სწრაფ ქსელზე ვერაფერს დაინახავენ
+      await new Promise(r => setTimeout(r, Math.max(0, 1000 - ms)));
+
+      server.classList.remove('thinking');
+
+      if (!fallback && ok && Array.isArray(data)) {
+        fly('back', status + ' OK · ' + ms + 'ms', '#2e7d4f');
+        elStatus.textContent = status;
+        elStatus.style.color = '#2e7d4f';
+        elStatusText.textContent = 'ნამდვილი პასუხი';
+        elCount.textContent = data.length;
+        elType.textContent = 'application/json';
+        elNote.textContent = 'ეს ნამდვილი მოთხოვნა იყო. გახსენი DevTools → Network და ნახე იგივე ჩანაწერი.';
+        elBody.textContent = JSON.stringify(data.slice(0, 3), null, 2);
+        elBody.style.color = '#d4d4d4';
+      } else if (!fallback && !ok) {
+        fly('back', status + ' · ' + ms + 'ms', '#b3352c');
+        elStatus.textContent = status;
+        elStatus.style.color = '#b3352c';
+        elStatusText.textContent = 'სერვერმა უარი თქვა';
+        elCount.textContent = '0';
+        elType.textContent = 'application/json';
+        elNote.textContent = 'ყურადღება: fetch-ს შეცდომა არ გადმოუგდია. catch არ გაეშვა — ეს ჩვენ თვითონ შევამოწმეთ response.ok-ით.';
+        elBody.textContent = '// სერვერმა ' + status + ' დააბრუნა';
+        elBody.style.color = '#f2a2a2';
+      } else {
+        fly('back', 'Failed to fetch', '#b3352c');
+        elStatus.textContent = '—';
+        elStatus.style.color = '#b3352c';
+        elStatusText.textContent = 'პასუხი არ მოვიდა';
+        elCount.textContent = DEMO.length + ' (დემო)';
+        elType.textContent = 'ლოკალური';
+        elNote.textContent = 'ქსელამდე ვერ მივედით — ინტერნეტი, CORS ან timeout. სლაიდი სადემონსტრაციო მონაცემებზე გადავიდა, რომ ლექცია არ შეწყდეს. სწორედ ასე უნდა იქცეოდეს კარგი აპლიკაციაც: შეცდომაზე ცარიელი ეკრანი არ რჩება.';
+        elBody.textContent = JSON.stringify(DEMO, null, 2);
+        elBody.style.color = '#d4d4d4';
+      }
+      busy = false;
+    };
+  }
+
+  // ── ქსელის მდგომარეობა ქვედა ზოლში ───────────────────────────────
+  const syncNet = () => { fNet.textContent = navigator.onLine ? 'online' : 'offline'; };
+  addEventListener('online', syncNet);
+  addEventListener('offline', syncNet);
+  syncNet();
+
+  show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+})();
+</script>
+</body>
+</html>

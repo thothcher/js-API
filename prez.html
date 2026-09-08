@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="ka" class="scroll-smooth">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tailwind CSS - ლექცია</title>
+<meta name="description" content="ლექციის სლაიდები Tailwind CSS-ზე, აწყობილი თავად Tailwind-ით. გახსენით DevTools." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 54 33'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M27 0C19.8 0 15.3 3.6 13.5 10.8C16.2 7.2 19.35 5.85 22.95 6.75C25.004 7.263 26.472 8.754 28.097 10.403C30.744 13.09 33.808 16.2 40.5 16.2C47.7 16.2 52.2 12.6 54 5.4C51.3 9 48.15 10.35 44.55 9.45C42.496 8.937 41.028 7.446 39.403 5.797C36.756 3.11 33.692 0 27 0ZM13.5 16.2C6.3 16.2 1.8 19.8 0 27C2.7 23.4 5.85 22.05 9.45 22.95C11.504 23.464 12.972 24.954 14.597 26.603C17.244 29.29 20.308 32.4 27 32.4C34.2 32.4 38.7 28.8 40.5 21.6C37.8 25.2 34.65 26.55 31.05 25.65C28.996 25.137 27.528 23.646 25.903 21.997C23.256 19.31 20.192 16.2 13.5 16.2Z' fill='%2338BDF8'/%3E%3C/svg%3E" />
+
+<!-- Tailwind v4, პირდაპირ ბრაუზერში. build step-ის გარეშე, განზრახ:
+     ყველაფერი, რასაც დღეს დაინსპექტირებთ, ნამდვილი კლასების სიაა და არა კომპილირებული bundle. -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style type="text/tailwindcss">
+  @theme {
+    --color-paper:   #e7eae9;
+    --color-panel:   #f3f5f4;
+    --color-ink:     #14171a;
+    --color-ink-2:   #4a5157;
+    --color-rule:    #c3cac9;
+    --color-live:    #1e33e0;
+    --color-box-c:   #a7c5e6; /* devtools: content */
+    --color-box-p:   #b9d8b0; /* devtools: padding */
+    --color-box-m:   #f5c99b; /* devtools: margin  */
+    --font-display:  "Noto Serif Georgian", Georgia, serif;
+    --font-sans:     "Noto Sans Georgian", ui-sans-serif, system-ui, sans-serif;
+    --font-mono:     "IBM Plex Mono", "Noto Sans Georgian", ui-monospace, monospace;
+  }
+</style>
+
+<style>
+  /* ერთადერთი ხელით დაწერილი CSS ამ ფაილში — თითოეული ხაზი აქ არის მხოლოდ იმიტომ, რომ წესი ეხება ბევრ უცნობ ელემენტს და არა ერთს. */
+  html, body { height: 100%; }
+  body {
+    background: #e7eae9; color: #14171a;
+    font-family: "Noto Sans Georgian", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .display { font-family: "Noto Serif Georgian", Georgia, serif; letter-spacing: -0.02em; }
+  /* 4px ბადე = Tailwind-ის spacing ერთეული, თვალსაჩინოდ. */
+  .grid-paper {
+    background-image: radial-gradient(#14171a12 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  pre::-webkit-scrollbar, .scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  pre::-webkit-scrollbar-thumb, .scroll::-webkit-scrollbar-thumb { background: #c3cac9; border-radius: 8px; }
+  .slide { display: none; }
+  .slide.is-active { display: block; overflow: auto; animation: rise .18s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .slide.is-active { animation: none; } }
+  @keyframes caret { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+  .caret { animation: caret 1.1s steps(1) infinite; }
+  @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+  /* flip-card: audience guesses, click reveals the answer on the back */
+  .flip-card { perspective: 1400px; overflow: hidden; }
+  .flip-inner { display: grid; transition: transform .6s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+  .flip-front, .flip-back { grid-area: 1 / 1; backface-visibility: hidden; }
+  .flip-back { transform: rotateX(180deg); }
+  .flip-card.is-flipped .flip-inner { transform: rotateX(180deg); }
+  @media (prefers-reduced-motion: reduce) { .flip-inner { transition: none; } }
+  /* x-ray inspector */
+  body.xray [data-x]:hover { outline: 1px solid #1e33e0; outline-offset: 2px; cursor: crosshair; }
+  code .t { color: #1e33e0; }
+  code .c { color: #7c8489; }
+  code .k { color: #14171a; font-weight: 600; }
+  mark { background: #1e33e01f; color: inherit; padding: 0 .15em; border-radius: 2px; }
+  /* oklch palette slide: range thumb/track live only as pseudo-elements, unreachable via Tailwind utilities.
+     each vendor prefix needs its own rule — a browser that doesn't recognize one selector in a comma
+     list (e.g. ::-moz-range-track in Chrome) drops the whole rule, not just that branch. */
+  .hue-range { -webkit-appearance: none; appearance: none; height: 26px; background: none; cursor: pointer; }
+  .hue-range::-webkit-slider-runnable-track {
+    height: 14px; border-radius: 999px;
+    background: linear-gradient(to right in oklch, oklch(75% 0.17 0), oklch(75% 0.17 60), oklch(75% 0.17 120), oklch(75% 0.17 180), oklch(75% 0.17 240), oklch(75% 0.17 300), oklch(75% 0.17 360));
+  }
+  .hue-range::-moz-range-track {
+    height: 14px; border-radius: 999px;
+    background: linear-gradient(to right in oklch, oklch(75% 0.17 0), oklch(75% 0.17 60), oklch(75% 0.17 120), oklch(75% 0.17 180), oklch(75% 0.17 240), oklch(75% 0.17 300), oklch(75% 0.17 360));
+  }
+  .hue-range::-webkit-slider-thumb {
+    -webkit-appearance: none; margin-top: -6px;
+    height: 26px; width: 6px; border-radius: 3px;
+    background: #fff; border: 2px solid #14171a; box-shadow: 0 1px 3px #14171a4d;
+    transition: transform .1s ease; cursor: grab;
+  }
+  .hue-range::-moz-range-thumb {
+    height: 22px; width: 6px; border-radius: 3px;
+    background: #fff; border: 2px solid #14171a; box-shadow: 0 1px 3px #14171a4d;
+    transition: transform .1s ease; cursor: grab;
+  }
+  .hue-range:active::-webkit-slider-thumb { cursor: grabbing; transform: scaleX(1.4); }
+  .hue-range:active::-moz-range-thumb { cursor: grabbing; transform: scaleX(1.4); }
+
+</style>
+</head>
+
+<body class="grid-paper antialiased text-ink selection:bg-live/30 selection:text-ink">
+
+<div class="fixed inset-x-0 top-0 z-50 h-[3px] bg-rule/40">
+  <div id="bar" class="h-full w-0 bg-ink transition-[width] duration-300 ease-out"></div>
+</div>
+
+<main id="deck" class="h-screen w-screen pt-[3px] pb-11">
+
+<!-- 01 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="სათაური" data-notes="დაიწყე ორი კითხვით დარბაზისთვის: ვის შეშინებია CSS-ის წესის წაშლა? ვის დაურქმევია .card-wrapper-2? ხელები აწიოს. ეს არის კაუჭი მთელი ლექციისთვის.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-start justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">
+      <span>ლექცია · frontend</span>
+      <span>დასაწყებად დააჭირეთ <kbd class="border border-rule bg-panel px-1.5 py-0.5">→</kbd></span>
+    </div>
+
+    <div class="flex flex-1 flex-col justify-center">
+      <div class="flex items-center gap-x-[2vw]">
+        <svg viewBox="0 0 54 33" fill="none" class="h-[6.5vw] w-auto shrink-0" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M27 0C19.8 0 15.3 3.6 13.5 10.8C16.2 7.2 19.35 5.85 22.95 6.75C25.004 7.263 26.472 8.754 28.097 10.403C30.744 13.09 33.808 16.2 40.5 16.2C47.7 16.2 52.2 12.6 54 5.4C51.3 9 48.15 10.35 44.55 9.45C42.496 8.937 41.028 7.446 39.403 5.797C36.756 3.11 33.692 0 27 0ZM13.5 16.2C6.3 16.2 1.8 19.8 0 27C2.7 23.4 5.85 22.05 9.45 22.95C11.504 23.464 12.972 24.954 14.597 26.603C17.244 29.29 20.308 32.4 27 32.4C34.2 32.4 38.7 28.8 40.5 21.6C37.8 25.2 34.65 26.55 31.05 25.65C28.996 25.137 27.528 23.646 25.903 21.997C23.256 19.31 20.192 16.2 13.5 16.2Z" fill="#38BDF8"/>
+        </svg>
+        <h1 class="display text-[9vw] leading-[0.9] font-semibold"><span style="color:#38BDF8">Tailwind</span><br>CSS</h1>
+      </div>
+      <div class="mt-8 h-px w-32 bg-live/40"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="გეგმა" data-notes="აქ 60 წამზე მეტი არ დახარჯო. მთავარია თქვა, რომ ლექციის ნახევარი ცოცხალია — ბრაუზერი მათაც გახსნილი უნდა ჰქონდეთ.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5 flex flex-col justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>გეგმა</p>
+        <h2 class="display mt-4 text-6xl leading-[1] font-semibold">რაზე ვისაუბრებთ?</h2>
+      </div>
+     
+    </div>
+
+    <ol class="col-span-7 grid content-center gap-px bg-rule">
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">01</span><span>რომელ პრობლემებს წყვეტს tailwind</span></li>
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">02</span><span>Utility-first vs component-first. Bootstrap-თან შედარება</span></li>
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">04</span><span>დაშორება, ტექსტი, ფერი, განლაგება - ინტერაქციულად</span></li>
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">05</span><span>Responsive და state ვარიანტები media query-ის დაწერის გარეშე</span></li>
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">03</span><span>როგორ იკითხება კლასები მაგ.: <code class="font-mono text-[13px]">md:hover:bg-ink/80</code></span></li>
+      <li class="flex items-center gap-6 bg-paper p-5"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">06</span><span>სად ჯობია ჯერ კიდევ მხოლოდ CSS და სად არის Tailwind არასწორი არჩევანი</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 03 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="პრობლემა" data-notes="აქ საკუთარი პროექტიდან რეალური ამბავი მოყევი — კლასი, რომლის წაშლაც გეშინოდა. პირადი ამბავი აბსტრაქციას ყოველთვის ჯობნის. მერე სამ უცნობზე გადადი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-4">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>პრობლემა</p>
+      <h2 class="display mt-4 text-6xl leading-[1] font-semibold">ცვლილება&nbsp;#20</h2>
+      <p class="mt-6 text-ink-2">
+        პირველ დღეს CSS-ს არაფერი უჭირს. მაგრამ მოგვიანებით კოდი გროვდება
+        და ყოველთვის ერთი და იმავე პრობლმას ვაწყდებით.
+      </p>
+      <div class="mt-8 border-l-2 border-live pl-5">
+        <p class="text-lg leading-snug">ძველ stylesheet-ში ყოველ სელექტორს სამი უცნობი მოსდევს:</p>
+        <ul class="mt-4 space-y-2 text-[15px] text-ink-2">
+          <li>— სხვა ვინ იყენებს ამას?</li>
+          <li>— რა გაფუჭდება, თუ შევცვლი?</li>
+          <li>— საერთოდ საჭიროა ეს კოდი?</li>
+        </ul>
+        <p class="mt-4 text-sm text-ink-2">რომელიმეზე პასუხის გაცემა უფრო ძნელია, ვიდრე თავად სტილის დაწერა.</p>
+      </div>
+    </div>
+
+    <ol class="col-span-8 flex flex-col justify-center gap-px bg-rule">
+      <li class="grid grid-cols-[9rem_1fr] gap-6 bg-paper p-6">
+        <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-box-p"></span>ცვლილება 1–3</span>
+        <span>სუფთაა. ერთი ფაილი, გასაგები სახელები, ყველაფერი გახსოვს.</span>
+      </li>
+      <li class="grid grid-cols-[9rem_1fr] gap-6 bg-paper p-6">
+        <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-box-c"></span>ცვლილება 4–8</span>
+        <span>პირველი დუბლიკატი. <code class="font-mono text-[13px]">.card</code> და <code class="font-mono text-[13px]">.card-small</code> უკვე 80%-ით ერთნაირია.</span>
+      </li>
+      <li class="grid grid-cols-[9rem_1fr] gap-6 bg-paper p-6">
+        <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-box-m"></span>ცვლილება 9–14</span>
+        <span>Specificity-ის ომი. იმარჯვებს ის, რასაც არ უნდა მოეგო — და ჩნდება <code class="font-mono text-[13px]">!important</code>.</span>
+      </li>
+      <li class="grid grid-cols-[9rem_1fr] gap-6 bg-paper p-6">
+        <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-ink"></span>ცვლილება 15–20</span>
+        <span>შიში. აღარავინ შლის აღარაფერს, ფაილი მხოლოდ იზრდება — და მისი ნახევარი გამოუყენებელია.</span>
+      </li>
+      <li class="grid grid-cols-[9rem_1fr] gap-6 bg-ink p-6 text-paper">
+        <span class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-paper/60"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-box-m"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>შედეგი</span>
+        <span>Stylesheet ახლა საერთო, გლობალური და ცვალებადი ობიექტია. TypeScript-ში ამას არასდროს დავუშვებდით.</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- 04 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="პრობლემა" data-notes="მიეცი 10 წამი მარცხენა პანელის წასაკითხად, სიჩუმეში. კომენტარები თავად არის ხუმრობა. მერე გადადი მარჯვენაზე და თქვი: იგივე შედეგი, ოღონდ ელემენტის წაშლა ყველა სტილს თან წაიღებს.">
+  <div class="flex h-full flex-col px-14 py-10">
+    <div class="flex items-end justify-between border-b border-rule pb-4">
+      <h2 class="display text-4xl font-semibold">ერთი და იგივე card CSS-ის & tailwind-ის გამოყენებით</h2>
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">მარცხნივ: 6 თვე ცვლილებები · მარჯვნივ: დღეს</p>
+    </div>
+
+    <div class="grid min-h-0 flex-1 grid-cols-2 gap-px bg-rule">
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">styles.css — ჩართული 4 ფაილიდან ერთი</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12px] leading-[1.7] text-[#d4d4d4]"><code><span class="text-[#d7ba7d]">.card</span> { <span class="text-[#9cdcfe]">padding</span>: <span class="text-[#ce9178]">16px</span>; <span class="text-[#9cdcfe]">border-radius</span>: <span class="text-[#ce9178]">6px</span>; <span class="text-[#9cdcfe]">background</span>: <span class="text-[#ce9178]">#fff</span>; }
+<span class="text-[#d7ba7d]">.card--sm</span> { <span class="text-[#9cdcfe]">padding</span>: <span class="text-[#ce9178]">12px</span>; <span class="text-[#9cdcfe]">border-radius</span>: <span class="text-[#ce9178]">6px</span>; <span class="text-[#9cdcfe]">background</span>: <span class="text-[#ce9178]">#fff</span>; }
+<span class="text-[#d7ba7d]">.card--sm-alt</span> { <span class="text-[#9cdcfe]">padding</span>: <span class="text-[#ce9178]">12px 14px</span>; <span class="text-[#9cdcfe]">background</span>: <span class="text-[#ce9178]">#fff</span>; }
+
+<span class="italic text-[#6a9955]">/* dashboard-ისთვის დაემატა, არ წაშალო — ვაზ */</span>
+<span class="text-[#d7ba7d]">.card.is-compact .card__title</span> { <span class="text-[#9cdcfe]">font-size</span>: <span class="text-[#ce9178]">14px !important</span>; }
+
+<span class="text-[#d7ba7d]">.card__title</span> { <span class="text-[#9cdcfe]">font-size</span>: <span class="text-[#ce9178]">16px</span>; <span class="text-[#9cdcfe]">font-weight</span>: <span class="text-[#ce9178]">600</span>; <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">#111</span>; }
+<span class="text-[#d7ba7d]">.card__title--muted</span> { <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">#666</span>; }
+<span class="italic text-[#6a9955]">/* ჯერ კიდევ გამოიყენება? git blame ამბობს — 2023 */</span>
+<span class="text-[#d7ba7d]">.card__title--muted.dark</span> { <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">#999</span>; }
+
+<span class="text-[#d7ba7d]">.card__body</span> { <span class="text-[#9cdcfe]">margin-top</span>: <span class="text-[#ce9178]">8px</span>; <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">#444</span>; <span class="text-[#9cdcfe]">line-height</span>: <span class="text-[#ce9178]">1.5</span>; }
+<span class="text-[#d7ba7d]">.card__body p:last-child</span> { <span class="text-[#9cdcfe]">margin-bottom</span>: <span class="text-[#ce9178]">0</span>; }
+
+<span class="text-[#d7ba7d]">.card__footer</span> { <span class="text-[#9cdcfe]">display</span>: <span class="text-[#ce9178]">flex</span>; <span class="text-[#9cdcfe]">gap</span>: <span class="text-[#ce9178]">8px</span>; <span class="text-[#9cdcfe]">margin-top</span>: <span class="text-[#ce9178]">16px</span>; }
+<span class="text-[#d7ba7d]">.card__footer > .btn:first-child</span> { <span class="text-[#9cdcfe]">margin-left</span>: <span class="text-[#ce9178]">0</span>; }
+<span class="italic text-[#6a9955]">/* fix safari-სთვის, არ შეეხო */</span>
+<span class="text-[#d7ba7d]">.card__footer</span> { <span class="text-[#9cdcfe]">align-items</span>: <span class="text-[#ce9178]">center</span>; }
+
+<span class="text-[#c586c0]">@media</span> (<span class="text-[#9cdcfe]">max-width</span>: <span class="text-[#ce9178]">768px</span>) {
+  <span class="text-[#d7ba7d]">.card</span> { <span class="text-[#9cdcfe]">padding</span>: <span class="text-[#ce9178]">12px</span>; }
+  <span class="text-[#d7ba7d]">.card__footer</span> { <span class="text-[#9cdcfe]">flex-direction</span>: <span class="text-[#ce9178]">column</span>; }
+  <span class="text-[#d7ba7d]">.card__title</span> { <span class="text-[#9cdcfe]">font-size</span>: <span class="text-[#ce9178]">15px</span>; }
+}
+
+<span class="text-[#d7ba7d]">.card:hover</span> { <span class="text-[#9cdcfe]">box-shadow</span>: <span class="text-[#ce9178]">0 2px 8px rgba(0,0,0,.08)</span>; }
+<span class="text-[#d7ba7d]">.card.is-selected:hover</span> { <span class="text-[#9cdcfe]">box-shadow</span>: <span class="text-[#ce9178]">none</span>; }
+</code></pre>
+      </div>
+
+      <div class="flex min-h-0 flex-col bg-panel">
+        <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
+          <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">card.component.html — ერთადერთი ჩართული ფაილი</p>
+        </div>
+        <pre class="scroll min-h-0 flex-1 overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12px] leading-[1.7] text-[#d4d4d4]"><code>&lt;<span class="text-[#569cd6]">article</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"rounded-md bg-white p-3 md:p-4
+                hover:shadow-md"</span>&gt;
+  &lt;<span class="text-[#569cd6]">h3</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-[15px] md:text-base font-semibold"</span>&gt;
+    სათაური
+  &lt;/<span class="text-[#569cd6]">h3</span>&gt;
+  &lt;<span class="text-[#569cd6]">div</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"mt-2 leading-relaxed text-neutral-600"</span>&gt;
+    ტექსტი
+  &lt;/<span class="text-[#569cd6]">div</span>&gt;
+  &lt;<span class="text-[#569cd6]">footer</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"mt-4 flex flex-col items-center gap-2
+                 md:flex-row"</span>&gt;
+    …
+  &lt;/<span class="text-[#569cd6]">footer</span>&gt;
+&lt;/<span class="text-[#569cd6]">article</span>&gt;</code></pre>
+        <div class="border-t border-rule px-5 py-4 text-xs text-ink-2">
+          წაშალე ეს კომპონენტი და მასთან ერთად ქრება ყველა სტილი, რომელსაც ის იყენებდა.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="განმარტება" data-notes="ხაზი გაუსვი მე-2 ნაბიჯს: Tailwind შენს ფაილებს უბრალო ტექსტად კითხულობს. სწორედ ამიტომ კლასის სახელი სრულად უნდა ეწეროს — არასდროს ააწყო სტრიქონების შეერთებით.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>განმარტება</p>
+      <h2 class="display mt-4 text-6xl leading-[1] font-semibold">რა არის Tailwind<br>რეალურად</h2>
+      <p class="mt-6 text-lg leading-relaxed text-ink-2">
+        Tailwind არ არის component library. მას არც ღილაკები მოაქვს, არც modal-ები
+        და არც აზრი იმაზე, როგორ უნდა გამოიყურებოდეს თქვენი პროდუქტი.
+      </p>
+      <p class="mt-4 text-lg leading-relaxed">
+        ის არის <span class="text-live">generator</span>: პატარა კლასების ფიქსირებული ლექსიკონი,
+        სადაც თითოეული ერთ ან ორ CSS დეკლარაციას შეესაბამება, პლუს build step, რომელიც
+        მხოლოდ იმას დააბრუნებს, რაც გამოიყენეთ.
+      </p>
+      <div class="mt-8 border border-rule bg-panel p-5 font-mono text-[13px]">
+        <p class="text-ink-2">.p-4 &nbsp;→&nbsp; padding: 1rem;</p>
+        <p class="text-ink-2">.flex →&nbsp; display: flex;</p>
+        <p class="text-ink-2">.text-sm → font-size: .875rem; line-height: 1.25rem;</p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6">
+      <div class="grid grid-cols-3 gap-px bg-rule">
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">1</span>scan</p>
+          <p class="mt-3 font-medium">კითხულობს ფაილებს ტექსტად</p>
+          <p class="mt-2 text-sm text-ink-2">ყველა .html, .ts, .jsx — ეძებს ყველაფერს, რაც კლასის სახელს ჰგავს.</p>
+        </div>
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">2</span>generate</p>
+          <p class="mt-3 font-medium">წერს CSS-ს მხოლოდ მათთვის</p>
+          <p class="mt-2 text-sm text-ink-2">მხოლოდ ის utility-ები, რომლებიც ნამდვილად აკრიფეთ. გამოუყენებელი არასდროს იქმნება.</p>
+        </div>
+        <div class="bg-panel p-6">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">3</span>ship</p>
+          <p class="mt-3 font-medium">ერთი პატარა ფაილი, რომელიც ჩერდება</p>
+          <p class="mt-2 text-sm text-ink-2">CSS-ის ზრდა აპლიკაციასთან ერთად სწორდება — თქვენ ერთსა და იმავე 300 კლასს იმეორებთ.</p>
+        </div>
+      </div>
+
+      <div class="border border-ink bg-ink p-6 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">შედეგი, რომელზეც არავინ საუბრობს</p>
+        <p class="mt-3 text-lg leading-relaxed">
+          თქვენი CSS output წყვეტს დამოკიდებულებას იმაზე, რამდენს წერთ, და ხდება იმის ფუნქცია,
+          რამდენად <span class="text-box-p">თანმიმდევრული</span> ხართ. ორი დეველოპერი ორ ფიჩერზე
+          ერთსა და იმავე კლასებს წერს — ესე იგი ერთსა და იმავე ბაიტებს.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="მოდელი" data-notes="მთავარი აზრობრივი გადართვა. Component-first გაძლევს სახელს, რომელიც ბევრ თვისებას ფლობს. Utility-first გაძლევს ბევრ სახელს, რომელთაგან თითოეული ერთ თვისებას ფლობს. სწორედ ისეთი სახელები ბერდება, რომლებიც ბევრ თვისებას ფლობენ.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-12">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ორი მოდელი</p>
+      <h2 class="display mt-3 text-5xl font-semibold">Component-first vs utility-first</h2>
+    </div>
+
+    <div class="col-span-6 flex flex-col border border-rule bg-panel">
+      <div class="border-b border-rule px-6 py-4">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-box-m"></span>Component-first · Bootstrap</p>
+        <p class="mt-2 text-lg">ერთი კლასი მთელ დიზაინის გადაწყვეტილებას ატარებს.</p>
+      </div>
+      <div class="p-6">
+        <pre class="font-mono text-[13px] leading-[1.8]"><code>&lt;button <span class="t">class="btn btn-primary btn-lg"</span>&gt;
+  შენახვა
+&lt;/button&gt;</code></pre>
+        <div class="mt-6 space-y-2 font-mono text-[12px] text-ink-2">
+          <p>.btn-primary → <span class="text-ink">background, color, border, hover, focus ring, disabled…</span></p>
+        </div>
+        <ul class="mt-6 space-y-3 text-sm">
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-p"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> პირველივე დღეს სწრაფად აღწევ მისაღებ შედეგს.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-p"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> თანმიმდევრულობაზე შენს ნაცვლად ის ზრუნავს.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-m"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg> ყოველი უნიკალური დიზაინი default-ებს ეომება. ბოლოს override-ს წერ.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-m"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg> საიტები Bootstrap-ის საიტებივით გამოიყურება.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-span-6 flex flex-col border border-ink bg-panel">
+      <div class="border-b border-rule px-6 py-4">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>Utility-first · Tailwind</p>
+        <p class="mt-2 text-lg">თითოეული კლასი ზუსტად ერთ გადაწყვეტილებას ატარებს.</p>
+      </div>
+      <div class="p-6">
+        <pre class="font-mono text-[13px] leading-[1.8]"><code>&lt;button <span class="t">class="rounded bg-ink px-5 py-2.5
+               text-paper hover:bg-ink-2"</span>&gt;
+  შენახვა
+&lt;/button&gt;</code></pre>
+        <div class="mt-6 space-y-2 font-mono text-[12px] text-ink-2">
+          <p>.px-5 → <span class="text-ink">padding-inline: 1.25rem;</span> — და სხვა არაფერი, არასდროს.</p>
+        </div>
+        <ul class="mt-6 space-y-3 text-sm">
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-p"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> override-ის ფენა არ არსებობს. აღარასდროს ეომები default-ს, რომელიც შენ არ დაგიწერია.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-p"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> დიზაინი შენია; შემზღუდველი კი — scale.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-m"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg> markup გრძელდება.</li>
+          <li class="flex gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-box-m"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg> გამეორებას კომპონენტი სჭირდება — რომელიც Angular-ში უკვე გაქვს.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="მოდელი" data-notes="ეს ბრძოლად არ აქციო. Bootstrap კარგი პასუხია სხვა კითხვაზე: მჭირდება მზა UI kit. Tailwind პასუხობს კითხვას: მაქვს დიზაინი და ზუსტად ის უნდა ავაწყო.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>შედარება</p>
+    <h2 class="display mt-3 text-5xl font-semibold">ისინი სხვადასხვა საჭიროებას ერგებიან</h2>
+
+    <div class="mt-8 grid flex-1 grid-cols-[12rem_1fr_1fr_1fr] gap-px overflow-hidden bg-rule text-[14px]">
+      <div class="bg-paper p-4"></div>
+      <div class="flex items-center gap-2 bg-paper p-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-ink-2"></span>CSS</div>
+      <div class="flex items-center gap-2 bg-paper p-4 font-mono text-[11px] uppercase tracking-[0.18em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>Tailwind</div>
+      <div class="flex items-center gap-2 bg-paper p-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="h-1.5 w-1.5 rounded-full bg-box-m"></span>Bootstrap</div>
+
+      <div class="bg-panel p-4 font-medium">რას გაძლევს</div>
+      <div class="bg-paper p-4 text-ink-2">არაფერს მზას — ყველაფერს თვითონ წერ</div>
+      <div class="bg-paper p-4 text-ink-2">მხოლოდ კლასებს. არც JS, არც კომპონენტები</div>
+      <div class="bg-paper p-4 text-ink-2">მზა კომპონენტებს + JS ფუნქციონალი</div>
+
+      <div class="bg-panel p-4 font-medium">შენ წერ</div>
+      <div class="bg-paper p-4 text-ink-2">საკუთარ კლასებს და მათ styles-საც — ორივეს ხელით</div>
+      <div class="bg-paper p-4 text-ink-2">სტილს პირდაპირ თეგზე</div>
+      <div class="bg-paper p-4 text-ink-2">სემანტიკურ სახელებს, მერე CSS-ს override-ისთვის</div>
+
+      <div class="bg-panel p-4 font-medium">კონფიგურაცია</div>
+      <div class="bg-paper p-4 text-ink-2">არ არსებობს — ყველაფერი შენი wheel-ია</div>
+      <div class="bg-paper p-4 text-ink-2">შეცვალე კლასი, ან შეასწორე theme token-ები</div>
+      <div class="bg-paper p-4 text-ink-2">Sass ცვლადები, ან specificity-ის ომი</div>
+
+      <div class="bg-panel p-4 font-medium">CSS-ის ზომა</div>
+      <div class="bg-paper p-4 text-ink-2">ზუსტად ის, რაც დაწერე — მაგრამ იზრდება კონტროლის გარეშე</div>
+      <div class="bg-paper p-4 text-ink-2">მხოლოდ ის, რაც გამოიყენე; არ გროვდება გამოუყენებელი კოდი</div>
+      <div class="bg-paper p-4 text-ink-2">ფიქსირებული, უმეტესად გამოუყენებელი</div>
+
+      <div class="bg-panel p-4 font-medium">როგორ გამოიყურება</div>
+      <div class="bg-paper p-4 text-ink-2">ზუსტად ისე, როგორც ააწყობ</div>
+      <div class="bg-paper p-4 text-ink-2">ზუსტად ისე, როგორც ააწყობ</div>
+      <div class="bg-paper p-4 text-ink-2">Bootstrap-ივით, სანამ რეალურ სამუშაოს არ ჩაატარებ</div>
+
+      <div class="bg-panel p-4 font-medium">საუკეთესოა როცა</div>
+      <div class="bg-paper p-4 text-ink-2">პატარა პროექტი, ან გინდა სრულიად custom(animations)</div>
+      <div class="bg-paper p-4 text-ink-2">გაქვს კონკრეტული დიზაინი, რომელიც ზუსტად უნდა გაიმეორო</div>
+      <div class="bg-paper p-4 text-ink-2">admin panel, პროტოტიპი, დიზაინერი არ გყავს</div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="მთავარი აზრი" data-notes="იყავი კონკრეტული: სთხოვე ასისტენტს card სუფთა CSS-ით და ის მოიგონებს კლასების სახელებს, რომლებიც შენს პროექტში არ არსებობს, ფაილში, რომელსაც ვერ ხედავს. სთხოვე Tailwind-ით და პასუხი სრული და ერთ ადგილას შესამოწმებელია.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5 flex flex-col justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>რატომ ახლა</p>
+        <h2 class="display mt-4 text-5xl leading-[1] font-semibold">AI უკეთ წერს<br>Tailwind-ს,<br>ვიდრე შენს<br>CSS-ს</h2>
+        <p class="mt-6 text-lg leading-relaxed text-ink-2">
+          არა იმიტომ, რომ მეტ Tailwind-ზე გაწვრთნეს — თუმცა ესეც. არამედ იმიტომ,
+          რომ ამოცანა ერთ ფაილში ეტევა და შედეგის შემოწმება მარტივად შეიძლება.
+        </p>
+      </div>
+      <p class="border-l-2 border-live pl-5 text-lg leading-snug">
+        უპიარეტესობა არ არის „ნაკლები კოდი", არამედ ისაა, რომ ახლა შენც და მოდელიც
+        მთელ ამოცანას ერთ ფაილში ხედავთ.
+      </p>
+    </div>
+
+    <div class="col-span-7 grid content-center gap-px bg-rule">
+      <div class="flex gap-4 bg-paper p-6">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg></span>
+        <div>
+          <p class="font-medium">ლექსიკონი საჯაროა</p>
+          <p class="mt-1 text-ink-2"><code class="font-mono text-[13px]">px-4</code> შენს რეპოში იმავეს ნიშნავს, რასაც დედამიწაზე ნებისმიერ სხვა რეპოში. შენი <code class="font-mono text-[13px]">.btn-main</code> — არა.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 bg-paper p-6">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg></span>
+        <div>
+          <p class="font-medium">არ სჭირდება კონტექსტი ცოდნა</p>
+          <p class="mt-1 text-ink-2">CSS-ის დასაწერად უნდა იცოდეს შენი დასახელებების წესები, არსებული სელექტორები და ა.შ. Utility-ების დასაწერად საკმარისია დიზაინის ცოდნა.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 bg-paper p-6">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span>
+        <div>
+          <p class="font-medium">ვერ გააფუჭებს იმას, რასაც ვერ წვდება</p>
+          <p class="mt-1 text-ink-2">საერთო stylesheet-ის რედაქტირებისას მოდელს შეუძლია შეუმჩნევნლად აურიოს სამი სხვა გვერდო. class ატრიბუტის რედაქტირებისას — ვერა.</p>
+        </div>
+      </div>
+      <div class="flex gap-4 bg-paper p-6">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <div>
+          <p class="font-medium">Review ვიზუალურია და არა არქეოლოგიური</p>
+          <p class="mt-1 text-ink-2">კითხულობ ერთ ელემენტს და ხედავ სტილიზაციის მთელ გადაწყვეტილებას. ეს ყველაზე სწრაფი code review-ია, რაც არსებობს.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Spacing" data-notes="სთხოვე დარბაზს რიცხვი დაასახელონ. დააკლიკე. აზრი ესაა: scale არის შეზღუდვა — 4px-იანი ბიჯი ნიშნავს, რომ ორი დეველოპერი ვერასდროს იქნება ერთმანეთისგან 3px-ით დაშორებული. კლიკის დროს DevTools-ის computed styles პანელი გახსნილი გქონდეს.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-4">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>spacing</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">ერთი რიცხვი,<br>ოთხი პიქსელი</h2>
+      <p class="mt-6 text-ink-2">მთელი spacing სისტემა ერთი გამრავლებაა: კლასში მითითებული რიცხვი × 4px. Padding, margin, gap, width, height — ერთი და იგივე scale, ყველგან.</p>
+
+      <div class="mt-8 space-y-2 font-mono text-[12px] text-ink-2">
+        <div class="flex items-center gap-3"><span class="w-10">p-1</span><span class="h-3 bg-box-p" style="width:4px"></span><span>4px</span></div>
+        <div class="flex items-center gap-3"><span class="w-10">p-2</span><span class="h-3 bg-box-p" style="width:8px"></span><span>8px</span></div>
+        <div class="flex items-center gap-3"><span class="w-10">p-4</span><span class="h-3 bg-box-p" style="width:16px"></span><span>16px</span></div>
+        <div class="flex items-center gap-3"><span class="w-10">p-8</span><span class="h-3 bg-box-p" style="width:32px"></span><span>32px</span></div>
+        <div class="flex items-center gap-3"><span class="w-10">p-16</span><span class="h-3 bg-box-p" style="width:64px"></span><span>64px</span></div>
+      </div>
+      <p class="mt-6 border-l-2 border-live pl-4 text-sm text-ink-2">მიმართულებები: <code class="font-mono">p</code> ოთხივე მხარეს · <code class="font-mono">px</code> მარცხნივ+მარჯვნივ · <code class="font-mono">py</code> ზემოთ+ქვემოთ · <code class="font-mono">pt pr pb pl</code> ერთი მხარე. შეცვალე <code class="font-mono">p</code> <code class="font-mono">m</code>-ით და მიიღებ margin-ს.</p>
+    </div>
+
+    <div class="col-span-8 flex flex-col justify-center" data-lab>
+      <div class="flex flex-wrap gap-2">
+        <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">padding</span>
+        <button data-group="p" data-cls="p-2" class="lab-btn">p-2</button>
+        <button data-group="p" data-cls="p-4" data-default class="lab-btn">p-4</button>
+        <button data-group="p" data-cls="p-8" class="lab-btn">p-8</button>
+        <button data-group="p" data-cls="px-10 py-4" class="lab-btn">px-10 py-4</button>
+        <button data-group="p" data-cls="p-16" class="lab-btn">p-16</button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">radius</span>
+        <button data-group="r" data-cls="rounded-none" data-default class="lab-btn">rounded-none</button>
+        <button data-group="r" data-cls="rounded-md" class="lab-btn">rounded-md</button>
+        <button data-group="r" data-cls="rounded-2xl" class="lab-btn">rounded-2xl</button>
+        <button data-group="r" data-cls="rounded-full" class="lab-btn">rounded-full</button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">border</span>
+        <button data-group="b" data-cls="" data-default class="lab-btn">არცერთი</button>
+        <button data-group="b" data-cls="border border-ink" class="lab-btn">border border-ink</button>
+        <button data-group="b" data-cls="border-4 border-live" class="lab-btn">border-4 border-live</button>
+        <button data-group="b" data-cls="border-b-2 border-ink" class="lab-btn">border-b-2</button>
+      </div>
+
+      <div class="mt-8 flex min-h-[13rem] items-center justify-center border border-dashed border-rule bg-panel p-6">
+        <div data-target data-base="bg-box-p" class="bg-box-p p-4">
+          <div class="bg-box-c px-6 py-3 font-mono text-[13px]">content box</div>
+        </div>
+      </div>
+
+      <div class="mt-4 border border-rule bg-ink p-4 font-mono text-[13px] text-paper">
+        <p class="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-paper/40"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-box-p"></span>live output</p>
+        <span class="text-paper/50">&lt;div class="</span><span data-out class="text-box-p"></span><span class="text-paper/50">"&gt;</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ტიპოგრაფია" data-notes="აღნიშნე, რომ text-sm line-height-საც აყენებს — ეს Tailwind-ის შეგნებული გადაწყვეტილებაა და არა ბაგი. tracking და leading ორი სიტყვაა, რომელსაც ყველა ივიწყებს: letter-spacing და line-height.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" data-lab>
+    <div class="col-span-4">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ტიპოგრაფია</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">ტექსტი, ფერი,<br>სიმუქე</h2>
+
+      <dl class="mt-8 space-y-4 text-sm">
+        <div><dt class="font-mono text-[13px] text-live">text-xs … text-9xl</dt><dd class="text-ink-2">font-size და მასთან ერთად გონივრული line-height</dd></div>
+        <div><dt class="font-mono text-[13px] text-live">font-normal / medium / bold</dt><dd class="text-ink-2">font-weight</dd></div>
+        <div><dt class="font-mono text-[13px] text-live">leading-tight / relaxed</dt><dd class="text-ink-2">line-height</dd></div>
+        <div><dt class="font-mono text-[13px] text-live">tracking-tight / wide</dt><dd class="text-ink-2">letter-spacing</dd></div>
+        <div><dt class="font-mono text-[13px] text-live">text-left / center / right</dt><dd class="text-ink-2">text-align</dd></div>
+        <div><dt class="font-mono text-[13px] text-live">text-ink-2 / text-live</dt><dd class="text-ink-2">ფერი, შენივე theme token-ებიდან</dd></div>
+      </dl>
+    </div>
+
+    <div class="col-span-8 flex flex-col justify-center">
+      <div class="space-y-3">
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ზომა</span>
+          <button data-group="s" data-cls="text-sm" class="lab-btn">text-sm</button>
+          <button data-group="s" data-cls="text-lg" class="lab-btn">text-lg</button>
+          <button data-group="s" data-cls="text-3xl" data-default class="lab-btn">text-3xl</button>
+          <button data-group="s" data-cls="text-6xl" class="lab-btn">text-6xl</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">სიმუქე</span>
+          <button data-group="w" data-cls="font-normal" data-default class="lab-btn">font-normal</button>
+          <button data-group="w" data-cls="font-medium" class="lab-btn">font-medium</button>
+          <button data-group="w" data-cls="font-semibold" class="lab-btn">font-semibold</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ფერი</span>
+          <button data-group="c" data-cls="text-ink" data-default class="lab-btn">text-ink</button>
+          <button data-group="c" data-cls="text-ink-2" class="lab-btn">text-ink-2</button>
+          <button data-group="c" data-cls="text-live" class="lab-btn">text-live</button>
+          <button data-group="c" data-cls="text-ink/40" class="lab-btn">text-ink/40</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">დაშორება</span>
+          <button data-group="t" data-cls="tracking-normal leading-normal" data-default class="lab-btn">default</button>
+          <button data-group="t" data-cls="tracking-tight leading-tight" class="lab-btn">tracking-tight leading-tight</button>
+          <button data-group="t" data-cls="tracking-widest leading-loose" class="lab-btn">tracking-widest leading-loose</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">alignment</span>
+          <button data-group="a" data-cls="text-left" data-default class="lab-btn">text-left</button>
+          <button data-group="a" data-cls="text-center" class="lab-btn">text-center</button>
+          <button data-group="a" data-cls="text-right" class="lab-btn">text-right</button>
+        </div>
+      </div>
+
+      <div class="mt-8 min-h-[10rem] border border-dashed border-rule bg-panel p-8">
+        <p data-target data-base="" class="text-3xl font-normal text-ink">ტიპოგრაფია ინტერფეისის 90%-ია.</p>
+      </div>
+
+      <div class="mt-4 border border-rule bg-ink p-4 font-mono text-[13px] text-paper">
+        <p class="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-paper/40"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-box-p"></span>live output</p>
+        <span class="text-paper/50">&lt;p class="</span><span data-out class="text-box-p"></span><span class="text-paper/50">"&gt;</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ფერი" data-notes="50–950 კიბე არის მიზეზი, რის გამოც Tailwind-ის საიტები არ გამოიყურება „ჭუჭყიანად”: ირჩევ საფეხურს და არა hex-ს. ახსენე, რომ v4-ში საკუთარ token-ებს პირდაპირ CSS-ში @theme-ით აღწერ — თუ იკითხავენ, აჩვენე ამ ფაილის თავი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ფერი</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">საფეხურები,<br>და არა hex</h2>
+      <p class="mt-6 text-ink-2">ყოველი ფერი მოდის ფიქსირებული კიბით 50-დან 950-მდე. შენ ირჩევ საფეხურს კიბეზე და არ გიწევს გამოგონება</p>
+
+      <pre class="mt-8 border border-rule bg-panel p-5 font-mono text-[13px] leading-[1.9]"><code><span class="t">bg-neutral-100</span>   ზედაპირი
+<span class="t">text-neutral-600</span> მეორეხარისხოვანი ტექსტი
+<span class="t">border-neutral-300</span> თხელი ხაზი
+<span class="t">bg-ink/80</span>        80% alpha, rgba()-ს გარეშე</code></pre>
+
+      <div class="mt-8 border border-ink bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">შენი საკუთარი token-ები · Tailwind v4</p>
+        <pre class="mt-3 font-mono text-[12.5px] leading-[1.8]"><code><span class="k">@theme</span> {
+  --color-ink:  <span class="t">#14171a</span>;
+  --color-live: <span class="t">#1e33e0</span>;
+}</code></pre>
+        <p class="mt-3 text-sm text-ink-2">სულ ეს არის — <code class="font-mono text-[12px]">bg-ink</code>, <code class="font-mono text-[12px]">text-live</code>, <code class="font-mono text-[12px]">border-ink/20</code> უკვე არსებობს. ამ სლაიდების პალიტრა ზუსტად ასეა აღწერილი, ამ ფაილის თავში.</p>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6">
+      <div>
+        <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">neutral</p>
+        <div class="grid grid-cols-11 gap-px bg-rule">
+          <div class="bg-neutral-50 py-8"></div><div class="bg-neutral-100 py-8"></div><div class="bg-neutral-200 py-8"></div><div class="bg-neutral-300 py-8"></div><div class="bg-neutral-400 py-8"></div><div class="bg-neutral-500 py-8"></div><div class="bg-neutral-600 py-8"></div><div class="bg-neutral-700 py-8"></div><div class="bg-neutral-800 py-8"></div><div class="bg-neutral-900 py-8"></div><div class="bg-neutral-950 py-8"></div>
+        </div>
+        <div class="mt-2 grid grid-cols-11 gap-px font-mono text-[10px] text-ink-2">
+          <span class="text-center">50</span><span class="text-center">100</span><span class="text-center">200</span><span class="text-center">300</span><span class="text-center">400</span><span class="text-center">500</span><span class="text-center">600</span><span class="text-center">700</span><span class="text-center">800</span><span class="text-center">900</span><span class="text-center">950</span>
+        </div>
+      </div>
+      <div>
+        <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">blue</p>
+        <div class="grid grid-cols-11 gap-px bg-rule">
+          <div class="bg-blue-50 py-8"></div><div class="bg-blue-100 py-8"></div><div class="bg-blue-200 py-8"></div><div class="bg-blue-300 py-8"></div><div class="bg-blue-400 py-8"></div><div class="bg-blue-500 py-8"></div><div class="bg-blue-600 py-8"></div><div class="bg-blue-700 py-8"></div><div class="bg-blue-800 py-8"></div><div class="bg-blue-900 py-8"></div><div class="bg-blue-950 py-8"></div>
+        </div>
+      </div>
+      <p class="text-sm text-ink-2">მარტივი წესი: ტექსტი 600–900, ზედაპირი 50–100, ბორდერი 200–300. საფეხურის გამოტოვება ჩვეულებრივ თვალით შესამჩნევი შეცდომაა.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="OKLCH" data-notes="ეს წინა სლაიდის ბუნებრივი გაგრძელებაა — იქ scale აჩვენე, აქ ახსნი, რატომ გამოიყურება ის scale ასე თანაბრად. ორივე გრადიენტის შედარება ხმამაღლა აღწერე: მარცხნივ რუხდება შუაში, მარჯვნივ არა — ორივეს ერთი და იგივე ორი ფერი აქვს ბოლოებში.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>OKLCH</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">oklch<br>სამი რიცხვი</h2>
+      <p class="mt-6 text-ink-2">Tailwind v4-ის მთელი პალიტრა hex-ის ნაცვლად <code class="font-mono text-[13px]">oklch()</code>-შია აღწერილი — ფერების სივრცე, აწყობილი იმაზე, თუ როგორ ხედავს ფერს თვალი და არა იმაზე, როგორ ინახავს მას ეკრანი.</p>
+
+      <pre class="mt-6 border border-rule bg-panel p-5 font-mono text-[12.5px] leading-[1.9]"><code><span class="t">oklch(</span> 65%   0.19   260 <span class="t">)</span>
+         ↑      ↑      ↑
+         L      C      H
+   lightness  chroma  hue </code></pre>
+
+      <div class="mt-6 space-y-3 text-sm text-ink-2">
+        <div class="flex gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-live"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span><span class="text-ink">თანაბარი ნაბიჯი, ყველა ტონზე.</span> 400→500 იგივე სხვაობაა წითელშიც და იისფერშიც — RGB/HSL-ში ეს არასდროს იყო სიმართლე.</span></div>
+        <div class="flex gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-live"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/></svg><span><span class="text-ink">უფრო ფართო გამა.</span> თანამედროვე (P3) ეკრანებზე იგივე კლასი უფრო ცოცხალ ფერს აჩვენებს — hex ამას ვერასდროს აღწერდა.</span></div>
+        <div class="flex gap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-live"><path d="M4 14a4 4 0 0 1 4-4h8a4 4 0 0 1 0 8H8a4 4 0 0 1-4-4Z"/><path d="M9 10v8"/></svg><span><span class="text-ink">გრადიენტი აღარ ბინძურდება.</span> შუაში აღარ ჩნდება ის რუხი წერტილი, რომელსაც hex-ის ინტერპოლაცია ყოველთვის ტოვებდა.</span></div>
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-5">
+      <div>
+        <div class="mb-3 flex items-baseline justify-between">
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">გადაადგილე წერტილი</p>
+          <p class="font-mono text-[11px] text-ink-2">L × C & H</p>
+        </div>
+        <div class="flex gap-6">
+          <div id="oklchPad" class="relative h-36 w-36 shrink-0 touch-none select-none overflow-hidden rounded border border-ink/15" style="background:linear-gradient(to top, black, transparent), linear-gradient(to right, white, transparent), oklch(65% 0.3 260)">
+            <div id="oklchGuideX" class="pointer-events-none absolute inset-x-0 h-px bg-white mix-blend-difference" style="top:35%"></div>
+            <div id="oklchGuideY" class="pointer-events-none absolute inset-y-0 w-px bg-white mix-blend-difference" style="left:47.5%"></div>
+            <div id="oklchMarker" class="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-150 shadow-[0_0_0_2px_#fff,0_0_0_3px_#14171a4d,0_2px_6px_#14171a4d]" style="left:47.5%; top:35%; background:oklch(65% 0.19 260)"></div>
+          </div>
+
+          <div class="flex flex-1 flex-col justify-between py-0.5">
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-2">hue</p>
+              <input id="oklchHue" type="range" min="0" max="360" value="260" class="hue-range mt-2 w-full" />
+            </div>
+            <div class="mt-3 flex items-center gap-3 border border-rule bg-ink px-4 py-3 font-mono text-[13px] text-paper">
+              <div id="oklchSwatch" class="h-9 w-9 shrink-0 rounded border border-paper/20" style="background:oklch(65% 0.19 260)"></div>
+              <p class="leading-[1.7]"><span class="text-paper/50">oklch(</span><span id="oklchOutL" class="text-box-p">65%</span><span class="text-paper/50"> </span><span id="oklchOutC" class="text-box-p">0.19</span><span class="text-paper/50"> </span><span id="oklchOutH" class="text-box-p">260</span><span class="text-paper/50">)</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">ერთი ტონი, თერთმეტი საფეხური — oklch(L% C 260)</p>
+        <div class="grid grid-cols-11 gap-px bg-rule">
+          <div class="py-6" style="background:oklch(97% 0.02 260)"></div><div class="py-6" style="background:oklch(93% 0.04 260)"></div><div class="py-6" style="background:oklch(86% 0.08 260)"></div><div class="py-6" style="background:oklch(78% 0.12 260)"></div><div class="py-6" style="background:oklch(68% 0.16 260)"></div><div class="py-6" style="background:oklch(58% 0.19 260)"></div><div class="py-6" style="background:oklch(50% 0.20 260)"></div><div class="py-6" style="background:oklch(42% 0.18 260)"></div><div class="py-6" style="background:oklch(34% 0.14 260)"></div><div class="py-6" style="background:oklch(26% 0.10 260)"></div><div class="py-6" style="background:oklch(18% 0.06 260)"></div>
+        </div>
+        <div class="mt-2 grid grid-cols-11 gap-px font-mono text-[10px] text-ink-2">
+          <span class="text-center">50</span><span class="text-center">100</span><span class="text-center">200</span><span class="text-center">300</span><span class="text-center">400</span><span class="text-center">500</span><span class="text-center">600</span><span class="text-center">700</span><span class="text-center">800</span><span class="text-center">900</span><span class="text-center">950</span>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">იგივე ორი ფერი, ორი გზა შუაზე გადასასვლელად</p>
+        <div class="grid grid-cols-2 gap-px bg-rule">
+          <div>
+            <div class="h-14" style="background:linear-gradient(to right, #e0245e, #3b2fd1)"></div>
+            <p class="mt-2 text-center font-mono text-[11px] text-ink-2">ჩვეულებრივი (sRGB) — რუხდება შუაში</p>
+          </div>
+          <div>
+            <div class="h-14" style="background:linear-gradient(to right in oklch, #e0245e, #3b2fd1)"></div>
+            <p class="mt-2 text-center font-mono text-[11px] text-live">in oklch — ნათელი ბოლომდე</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Alignment" data-notes="Flexbox აქ ყველამ იცის. ერთადერთი გზავნილია, რომ კლასის სახელი არის ის მნიშვნელობა, რომელიც უკვე იცი — justify-between არის justify-content: space-between. ახალი არაფერია სასწავლი, მხოლოდ სხვანაირად ჩასაწერი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" data-lab>
+    <div class="col-span-4">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>alignment</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">Flexbox,<br>რომელიც უკვე<br>იცი</h2>
+      <pre class="mt-6 border border-rule bg-panel p-5 font-mono text-[12.5px] leading-[1.9]"><code><span class="t">flex</span>             display: flex
+<span class="t">items-center</span>     align-items: center
+<span class="t">justify-between</span>  justify-content: space-between
+<span class="t">gap-4</span>            gap: 1rem
+<span class="t">flex-col</span>         flex-direction: column
+<span class="t">grid grid-cols-3</span> სამსვეტიანი grid</code></pre>
+      <p class="mt-6 text-sm text-ink-2">დასამახსოვრებელი: <code class="font-mono">gap</code>. margin-ის ბაგების უმეტესობა ქრება, როგორც კი შვილ ელემენტებს margin-ის ნაცვლად gap-ით დააშორებ.</p>
+
+      <div class="mt-6 border border-ink bg-ink p-5 text-paper">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ხერხი, როცა scale-ს პასუხი არ აქვს</p>
+        <pre class="mt-3 font-mono text-[12.5px] leading-relaxed"><code><span class="text-box-c">top-[117px]</span>  <span class="text-box-p">bg-[#1e33e0]</span>  <span class="text-box-m">grid-cols-[14rem_1fr]</span></code></pre>
+        <p class="mt-3 text-sm text-paper/70">კვადრატული ფრჩხილი არასტანდარტულ მნიშვნელობას იღებს. გამოიყენე იშვიათად!</p>
+      </div>
+    </div>
+
+    <div class="col-span-8 flex flex-col justify-center">
+      <div class="space-y-3">
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">მიმართულება</span>
+          <button data-group="d" data-cls="flex-row" data-default class="lab-btn">flex-row</button>
+          <button data-group="d" data-cls="flex-col" class="lab-btn">flex-col</button>
+          <button data-group="d" data-cls="flex-row-reverse" class="lab-btn">flex-row-reverse</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">justify</span>
+          <button data-group="j" data-cls="justify-start" data-default class="lab-btn">justify-start</button>
+          <button data-group="j" data-cls="justify-center" class="lab-btn">justify-center</button>
+          <button data-group="j" data-cls="justify-between" class="lab-btn">justify-between</button>
+          <button data-group="j" data-cls="justify-end" class="lab-btn">justify-end</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">items</span>
+          <button data-group="i" data-cls="items-start" class="lab-btn">items-start</button>
+          <button data-group="i" data-cls="items-center" data-default class="lab-btn">items-center</button>
+          <button data-group="i" data-cls="items-stretch" class="lab-btn">items-stretch</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="mr-2 self-center font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">gap</span>
+          <button data-group="g" data-cls="gap-0" class="lab-btn">gap-0</button>
+          <button data-group="g" data-cls="gap-4" data-default class="lab-btn">gap-4</button>
+          <button data-group="g" data-cls="gap-12" class="lab-btn">gap-12</button>
+        </div>
+      </div>
+
+      <div class="mt-8 border border-dashed border-rule bg-panel p-4">
+        <div data-target data-base="flex h-64 w-full bg-paper p-4" class="flex h-64 w-full flex-row items-center justify-start gap-4 bg-paper p-4">
+          <div class="bg-box-c px-6 py-4 font-mono text-[13px]">1</div>
+          <div class="bg-box-p px-6 py-8 font-mono text-[13px]">2</div>
+          <div class="bg-box-m px-6 py-6 font-mono text-[13px]">3</div>
+        </div>
+      </div>
+
+      <div class="mt-4 border border-rule bg-ink p-4 font-mono text-[13px] text-paper">
+        <p class="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-paper/40"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-box-p"></span>live output</p>
+        <span class="text-paper/50">&lt;div class="</span><span data-out class="text-box-p"></span><span class="text-paper/50">"&gt;</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="ავაწყოთ" data-notes="გაიარე კლავიატურით. ყოველი ნაბიჯი ერთ იდეას ამატებს, არასდროს ორს. სანამ დააჭერ, ჰკითხე: რომელ კლასს დაამატებდით ახლა? მე-4 ნაბიჯზე ჩვეულებრივ სწორად პასუხობენ — და სწორედ ეს არის მთელი ლექციის აზრი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" data-build>
+    <div class="col-span-5 flex flex-col">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ავაწყოთ</p>
+      <h2 class="display mt-3 text-5xl leading-[1] font-semibold">არაფრიდან<br>რაღაცამდე</h2>
+
+      <div class="mt-8 flex items-center gap-3">
+        <button data-build-prev class="border border-rule bg-panel px-4 py-2 font-mono text-[13px] hover:bg-ink hover:text-paper">← უკან</button>
+        <button data-build-next class="border border-ink bg-ink px-4 py-2 font-mono text-[13px] text-paper hover:bg-ink-2">შემდეგი →</button>
+        <span data-build-index class="font-mono text-[13px] text-ink-2"></span>
+      </div>
+
+      <div class="mt-6 border-l-2 border-live pl-5">
+        <p data-build-note class="text-lg leading-snug"></p>
+      </div>
+
+      <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
+        შვიდი ნაბიჯი, შვიდი იდეა, ერთი ელემენტი. შენიშნეთ: არც ერთხელ არ გაგვიხსნია სხვა ფაილი,
+        არ მოგვიგონია სახელი და არ გვიფიქრია, ხომ არ არის სელექტორი უკვე დაკავებული.
+      </div>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-6">
+      <div class="flex min-h-[16rem] items-center justify-center border border-dashed border-rule bg-panel p-10">
+        <article data-build-target class="">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">Deployment</p>
+          <h3 class="mt-2 text-xl font-semibold">Build დასრულდა</h3>
+          <p class="mt-2 text-ink-2">Production-ზე გავიდა 4 წუთის წინ, novan-ის მიერ.</p>
+          <div class="mt-5 flex gap-3">
+            <button class="border border-ink bg-ink px-4 py-2 text-sm text-paper">ლოგის ნახვა</button>
+            <button class="border border-rule px-4 py-2 text-sm">უკან დაბრუნება</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="border border-rule bg-ink p-5 font-mono text-[13px] leading-relaxed text-paper">
+        <p class="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-paper/40"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-box-p"></span>live output</p>
+        <span class="text-paper/50">&lt;article class="</span><span data-build-code class="text-box-p"></span><span class="text-paper/50">"&gt;</span>
+      </div>
+    </div>
+
+    <script type="application/json" data-build-steps>
+    [
+      {"cls":"", "note":"ნაბიჯი 0 — სუფთა HTML. მხოლოდ ბრაუზერის default-ები. სწორედ ამას ხედავს მომხმარებელი, თუ CSS არ ჩაიტვირთა — ამიტომ აზრი მაინც უნდა ჰქონდეს."},
+      {"cls":"bg-paper", "note":"მიეცი ზედაპირი. bg-paper — token ჩვენი თემიდან და არა hex კოდი."},
+      {"cls":"bg-paper p-6", "note":"სუნთქვა. p-6 = 24px ოთხივე მხრიდან. ერთი კლასი, ერთი გადაწყვეტილება."},
+      {"cls":"bg-paper p-6 border border-rule", "note":"განსაზღვრე კიდე. shadow-ის ნაცვლად თხელი border — უფრო იაფი და უფრო მშვიდი."},
+      {"cls":"bg-paper p-6 border border-rule max-w-sm", "note":"შეზღუდე სიგანე. max-w-sm არ აძლევს ტექსტის ხაზს იმდენად გაგრძელების საშუალებას, რომ წაკითხვა გაძნელდეს."},
+      {"cls":"bg-paper p-6 border border-rule max-w-sm shadow-sm hover:shadow-md transition-shadow", "note":"დაამატე რეაქცია hover-ზე — და transition, რომ არ გადმოხტეს. ორი prefix, ნული media query."},
+      {"cls":"bg-paper p-6 border border-rule max-w-sm shadow-sm hover:shadow-md transition-shadow md:p-8", "note":"Responsive ბოლოს: მეტი padding 768px-იდან ზემოთ. ამ ხაზამდე ყველაფერი მობილურის დიზაინია."}
+    ]
+    </script>
+  </div>
+</section>
+
+<!-- 15 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Responsive" data-notes="ნელა გაატარე სლაიდერი 768-ზე. ჩარჩო ნამდვილი iframe-ია ნამდვილი viewport-ით, ესე იგი ეს ნამდვილი media query-ებია. მერე თავად ბრაუზერის ფანჯარა შეცვალე და ქვედა ზოლში breakpoint-ის ნიშანზე მიუთითე.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-4">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>Responsive</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">Media query<br>ელემენტში</h2>
+      <p class="mt-6 text-ink-2">Prefix-ის გარეშე კლასი ყველგან მოქმედებს. Prefix-იანი კი — <span class="text-ink">იმ სიგანიდან და ზემოთ</span>. ესე იგი ჯერ მობილურის განლაგებას წერ, მერე კი მხოლოდ გამონაკლისებს აღნიშნავ.</p>
+
+      <pre class="mt-6 border border-rule bg-panel p-5 font-mono text-[12.5px] leading-[1.9]"><code><span class="t">sm:</span>  ≥ 640px
+<span class="t">md:</span>  ≥ 768px
+<span class="t">lg:</span>  ≥ 1024px
+<span class="t">xl:</span>  ≥ 1280px
+<span class="t">2xl:</span> ≥ 1536px</code></pre>
+
+      <div class="mt-6 border-l-2 border-live pl-5">
+        <p class="font-medium">წაიკითხე როგორც წინადადება</p>
+        <p class="mt-1 text-sm text-ink-2"><code class="font-mono text-[12px]">flex-col md:flex-row</code> — „ერთმანეთზე, 768-იდან კი გვერდიგვერდ". ელემენტის მთელი responsive ისტორია ერთ ხაზში, თავად ელემენტში.</p>
+      </div>
+    </div>
+
+    <div class="col-span-8 flex flex-col">
+      <div class="flex items-center gap-4">
+        <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">viewport</span>
+        <input id="vpRange" type="range" min="320" max="1280" value="380" class="h-1 flex-1 accent-ink" />
+        <span id="vpLabel" class="w-24 text-right font-mono text-[13px]">380px</span>
+        <span id="vpBp" class="border border-ink bg-ink px-2 py-1 font-mono text-[11px] text-paper">base</span>
+      </div>
+
+      <div class="mt-5 flex flex-1 justify-center overflow-hidden border border-dashed border-rule bg-panel p-5">
+        <iframe id="vpFrame" title="responsive demo" class="h-full border border-rule bg-white transition-[width] duration-150" style="width:380px"></iframe>
+      </div>
+
+      <pre class="mt-4 border border-rule bg-ink p-4 font-mono text-[12.5px] leading-[1.8] text-paper"><code>&lt;div class="<span class="text-box-p">flex flex-col gap-4 p-4  md:flex-row md:p-8</span>"&gt;
+  &lt;img class="<span class="text-box-p">w-full  md:w-40</span>" /&gt;
+  &lt;h3  class="<span class="text-box-p">text-lg  md:text-2xl</span>"&gt;…&lt;/h3&gt;</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 16 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="State-ები" data-notes="სანამ ლაპარაკობ, კურსორი თითოეულ ბლოკზე გაატარე. group და peer არის ის ორი, რაც ხალხს არწმუნებს — მშობელი აფორმებს შვილს, sibling რეაგირებს input-ზე, ორივე ერთი ხაზი JavaScript-ის გარეშე.">
+  <div class="flex h-full flex-col px-14 py-12">
+    <div class="flex items-end justify-between">
+      <div>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>States</p>
+        <h2 class="display mt-3 text-5xl font-semibold">hover: focus: disabled: და დანარჩენები</h2>
+      </div>
+      <p class="max-w-md text-sm text-ink-2">ვარიანტი არის prefix. ის utility-ს სელექტორში ახვევს — pseudo-class, pseudo-element, ატრიბუტი, media query, მშობლის მდგომარეობა. თავისუფლად დაალაგე: <code class="font-mono text-[12px]">md:dark:hover:underline</code>.</p>
+    </div>
+
+    <div class="mt-8 grid flex-1 grid-cols-4 gap-px bg-rule">
+      <div class="flex flex-col justify-between bg-panel p-6">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">hover: · active:</p>
+          <p class="mt-2 text-sm text-ink-2">საბაზისო. სცადე ღილაკი.</p>
+        </div>
+        <button class="mt-6 border border-ink bg-paper px-4 py-3 font-medium transition-colors hover:bg-ink hover:text-paper active:scale-95">მიიტანე კურსორი</button>
+        <pre class="mt-4 font-mono text-[11.5px] leading-[1.7] text-ink-2"><code>hover:bg-ink
+hover:text-paper
+active:scale-95</code></pre>
+      </div>
+
+      <div class="flex flex-col justify-between bg-panel p-6">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">focus: · disabled:</p>
+          <p class="mt-2 text-sm text-ink-2">Tab-ით შედი ველში. Accessibility უფასოდ.</p>
+        </div>
+        <div class="mt-6 space-y-3">
+          <input placeholder="დააკლიკე ან Tab" class="w-full border border-rule bg-paper px-3 py-2.5 text-sm outline-none focus:border-live focus:ring-2 focus:ring-live/30" />
+          <button disabled class="w-full border border-rule px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40">გამორთულია</button>
+        </div>
+        <pre class="mt-4 font-mono text-[11.5px] leading-[1.7] text-ink-2"><code>focus:border-live
+focus:ring-2
+disabled:opacity-40</code></pre>
+      </div>
+
+      <div class="flex flex-col justify-between bg-panel p-6">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">group-hover:</p>
+          <p class="mt-2 text-sm text-ink-2">კურსორი კარტაზე — რეაგირებს შვილი. JS-ის გარეშე.</p>
+        </div>
+        <a href="#" class="group mt-6 block border border-rule bg-paper p-4 transition-colors hover:border-ink">
+          <p class="font-medium">Release notes</p>
+          <p class="mt-1 text-sm text-ink-2 transition-colors group-hover:text-live">წაიკითხე changelog →</p>
+        </a>
+        <pre class="mt-4 font-mono text-[11.5px] leading-[1.7] text-ink-2"><code>მშობელი: <span class="t">group</span>
+შვილი:  <span class="t">group-hover:text-live</span></code></pre>
+      </div>
+
+      <div class="flex flex-col justify-between bg-panel p-6">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-live">peer-checked:</p>
+          <p class="mt-2 text-sm text-ink-2">Sibling რეაგირებს input-ზე. კვლავ JS-ის გარეშე.</p>
+        </div>
+        <label class="mt-6 flex cursor-pointer items-center gap-3 border border-rule bg-paper p-4">
+          <input type="checkbox" class="peer sr-only" />
+          <span class="h-5 w-9 shrink-0 border border-ink bg-paper transition-colors peer-checked:bg-live"></span>
+          <span class="text-sm transition-colors peer-checked:font-semibold peer-checked:text-live">შემატყობინე შეცდომაზე</span>
+        </label>
+        <pre class="mt-4 font-mono text-[11.5px] leading-[1.7] text-ink-2"><code>input: <span class="t">peer</span>
+label: <span class="t">peer-checked:text-live</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="სინტაქსი" data-notes="აქ შეანელე. როგორც კი კლასის ხმამაღლა წაკითხვას შეძლებენ, ყველაფერი დანარჩენი უბრალოდ ლექსიკონია. წაიკითხე მარჯვნიდან მარცხნივ: ჯერ რას აკეთებს, მერე როდის მოქმედებს. მეორე, რთული მაგალითი დარბაზს ხმამაღლა ათქმევინე, სანამ დააკლიკებ — ბარათი მხოლოდ მაშინ ატრიალდება.">
+  <div class="flex h-full flex-col px-14 py-12">
+   <div class="flex flex-1 flex-col justify-center">
+    <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>სინტაქსი</p>
+    <h2 class="display mt-3 text-5xl font-semibold">როგორ წაიკითხო ნებისმიერი კლასი</h2>
+
+    <div class="mt-14 flex flex-wrap items-end gap-x-1 font-mono text-[clamp(1.6rem,4.2vw,3.4rem)]">
+      <span class="border-b-2 border-box-m px-2">md:</span>
+      <span class="border-b-2 border-box-p px-2">hover:</span>
+      <span class="border-b-2 border-box-c px-2">bg-</span>
+      <span class="border-b-2 border-live px-2">ink</span>
+      <span class="border-b-2 border-rule px-2">/80</span>
+    </div>
+
+    <div class="mt-8 grid grid-cols-5 gap-6 text-sm">
+      <div><p class="font-mono text-[11px] uppercase tracking-[0.15em]" style="color:#c98c3c">Breakpoint</p><p class="mt-2 text-ink-2">768px-იდან ზემოთ. ამის ქვემოთ ეს კლასი არაფერს აკეთებს.</p></div>
+      <div><p class="font-mono text-[11px] uppercase tracking-[0.15em]" style="color:#5f9450">State</p><p class="mt-2 text-ink-2">მხოლოდ hover-ის დროს. დაალაგე იმდენი, რამდენიც გჭირდება.</p></div>
+      <div><p class="font-mono text-[11px] uppercase tracking-[0.15em]" style="color:#4a7fb5">Property</p><p class="mt-2 text-ink-2">რომელი CSS თვისება იცვლება — აქ background-color.</p></div>
+      <div><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-live">Value</p><p class="mt-2 text-ink-2">მნიშვნელობა თემის scale-იდან და არა შემთხვევითი hex.</p></div>
+      <div><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">Opacity</p><p class="mt-2 text-ink-2">არასავალდებულო. 80% alpha, rgba() ხელით აღარ გჭირდება.</p></div>
+    </div>
+
+    <div class="mt-10 flip-card cursor-pointer select-none" data-flip tabindex="0" role="button" aria-label="დააკლიკე პასუხის სანახავად">
+      <div class="flip-inner">
+        <div class="flip-front border border-rule bg-panel p-6 transition-colors hover:border-ink">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">უფრო რთული მაგალითი · დააკლიკე პასუხისთვის</p>
+          <div class="mt-3 flex flex-wrap items-end gap-x-1 font-mono text-[clamp(1.1rem,2.6vw,2rem)]">
+            <span class="border-b-2 border-ink-2 px-1">dark:</span><span class="border-b-2 border-box-m px-1">lg:</span><span class="border-b-2 border-box-p px-1">group-hover:first:</span><span class="border-b-2 border-box-c px-1">bg-</span><span class="border-b-2 border-live px-1">live</span><span class="border-b-2 border-rule px-1">/70</span>
+          </div>
+          <p class="mt-4 text-ink-2"> რას აკეთებს ეს ერთ კლასშია დაწყობილივ ხუთი ცნება. </p>
+        </div>
+        <div class="flip-back border border-ink bg-ink p-6 text-paper">
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">წაიკითხე ხმამაღლა</p>
+          <p class="mt-2 text-lg">„ბნელ რეჟიმში, დიდ ეკრანებზე, როცა მშობელზე კურსორი დგას და ეს პირველი შვილია — background გახადე თემის live-ფერად, 70% გამჭვირვალობით."</p>
+          <p class="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">დაშლილად</p>
+          <ul class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-paper/70">
+            <li><span class="font-mono text-paper">dark:</span> — მხოლოდ dark mode-ში</li>
+            <li><span class="font-mono text-paper">lg:</span> — 1024px-იდან ზემოთ</li>
+            <li><span class="font-mono text-paper">group-hover:first:</span> — მშობელზე hover, და ეს პირველი შვილია</li>
+            <li><span class="font-mono text-paper">bg-live/70</span> — background-color, theme-ის მნიშვნელობა, 70% alpha</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+   </div>
+
+    <a href="task.webp" download="tailwind-classwork.webp" class="mt-8 inline-flex w-fit shrink-0 items-center gap-2 border border-ink bg-ink px-4 py-2 font-mono text-[12px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-live">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      დავალების ჩამოტვირთვა
+    </a>
+  </div>
+</section>
+
+<!-- 18 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="Setup" data-notes="თუ დარბაზში პროექტი გახსნილი გაქვს, ეს ცოცხლად გააკეთე. ოთხი წუთი, სამი ფაილი. მერე მათ თვალწინ წაშალე ერთი კომპონენტის სტილების ფაილი.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>სამომავლოდ</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">ოთხი სხვლა.<br>Angular</h2>
+      <p class="mt-6 text-ink-2">Tailwind v4 ერთვება იმ PostCSS ნაბიჯში, რომელსაც Angular CLI უკვე უშვებს. არც config ფაილი, არც plugins მასივი, არც JS კონფიგურაცია.</p>
+      <div class="mt-8 border-l-2 border-live pl-5">
+        <p class="font-medium">რედაქტორის მოწყობა, რომელიც ყველაფერს ადგილზე სვამს</p>
+        <ul class="mt-2 space-y-1 text-sm text-ink-2">
+          <li>— Tailwind CSS IntelliSense: autocomplete და გენერირებული CSS hover-ზე</li>
+          <li>— Prettier-ის Tailwind plugin: კლასების სიას ავტომატურად ალაგებს, ამიტომ diff იკითხება</li>
+        </ul>
+      </div>
+      <p class="mt-8 text-sm text-ink-2">IntelliSense-ის გარეშე პირველი დღე გამოცნობას ჰგავს. მასთან ერთად დოკუმენტაციის კითხვას ერთ საათში წყვეტ.</p>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-px bg-rule">
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px] text-live">1</span>ინსტალაცია</p>
+        <pre class="mt-3 font-mono text-[13px]"><code>npm install tailwindcss @tailwindcss/postcss postcss</code></pre>
+      </div>
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px] text-live">2</span>.postcssrc.json პროექტის root-ში</p>
+        <pre class="mt-3 font-mono text-[13px] leading-[1.7]"><code>{
+  "plugins": { "@tailwindcss/postcss": {} }
+}</code></pre>
+      </div>
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px] text-live">3</span>src/styles.css, პირველი ხაზი</p>
+        <pre class="mt-3 font-mono text-[13px]"><code>@import "tailwindcss";</code></pre>
+      </div>
+      <div class="bg-ink p-6 text-paper">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-paper/30 bg-paper/10 text-[10px] text-paper">4</span>გაუშვი</p>
+        <pre class="mt-3 font-mono text-[13px]"><code>ng serve</code></pre>
+        <p class="mt-3 text-sm text-paper/70">ეს არის მთელი setup. კომპონენტების <code class="font-mono text-[12px]">.css</code> ფაილები თავისით იწყებენ დაცარიელებას.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="რეფაქტორინგი" data-notes="ეს სლაიდი დაუკავშირე შემდეგ დავალებას — სწორედ ეს არის ის, რასაც საკუთარ კოდზე გააკეთებენ. ხაზი გაუსვი: მთელი აპლიკაციის ერთბაშად გადაწერა არავის სთხოვია.">
+  <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
+    <div class="col-span-5">
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>რეფაქტორინგი</p>
+      <h2 class="display mt-4 text-5xl leading-[1] font-semibold">როგორ გადავიტანოთ ძველი CSS კლასები Tailwind-ის უტილიტებად?</h2>
+      <p class="mt-6 text-ink-2">არსებულ პროექტში Tailwind-ის შემოტანა არ ნიშნავს ერთ შაბათ-კვირას, დახარჯულს მთელი აპლიკაციის გადაწერაზე. ორივე ვერსია შეიძლება იყოს პროექტში, სანამ მიგრაცია არ დასრულდება.</p>
+      <p class="mt-6 border-l-2 border-live pl-5 text-sm text-ink-2">წესი მარტივია: არაფერს შლი, სანამ არ დარწმუნდები, რომ მას აღარავინ იყენებს.</p>
+    </div>
+
+    <div class="col-span-7 flex flex-col justify-center gap-px bg-rule">
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">1</span>აირჩიე ერთი კომპონენტი</p>
+        <p class="mt-2 text-ink-2">არა მთელი გვერდი, არა მთელი მოდული — ის, რომელსაც დღეს ისედაც ეხები.</p>
+      </div>
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">2</span>გახსენი Computed styles</p>
+        <p class="mt-2 text-ink-2">DevTools საშუალებით შეგიძლია გადაწერო არესებული ტეგების ზუსტი სტილები utility კლასებად ან უბრალოდ AI-ს მიანდო.</p>
+      </div>
+      <div class="bg-panel p-6">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-live"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-live/30 bg-live/10 text-[10px]">3</span>ორივე ერთდროულად ცხოვრობს</p>
+        <p class="mt-2 text-ink-2">ძველი <code class="font-mono text-[12px]">.css</code> და ახალი utility კლასები ერთ პროექტში დროებით თანაარსებობენ - ეს ნორმალურია.</p>
+      </div>
+      <div class="bg-ink p-6 text-paper">
+        <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-box-m"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-box-m/40 bg-box-m/10 text-[10px]">4</span>წაშალე ბოლოს</p>
+        <p class="mt-2 text-paper/70">შლი მხოლოდ მას შემდეგ, რაც scanner-ი (ან <code class="font-mono text-[12px]">grep</code>) ვეღარ პოულობს მის არც ერთ გამოყენებას.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 ───────────────────────────────────────────────────────────── -->
+<section class="slide h-full" data-section="შეჯამება" data-notes="დაასრულე ერთი წინადადებით. მერე დაავალე: აიღონ ერთი კომპონენტი ჩვენი კოდბეისიდან, წაშალონ მისი stylesheet და ხელახლა ააწყონ template-ში. ოცი წუთი, მერე შევადაროთ.">
+  <div class="flex h-full flex-col justify-between px-14 py-12">
+    <div class="flex items-start justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">
+      <span>შეჯამება</span><span>კითხვები</span>
+    </div>
+
+    <div class="grid grid-cols-12 gap-10">
+      <div class="col-span-7">
+        <h2 class="display text-[4.2vw] leading-[1.1] font-semibold">სტილები ეკუთვნის<br>ელემენტებს,<br>და არა ფაილებს.</h2>
+        <p class="mt-8 max-w-xl text-lg text-ink-2">
+          დღეს ნათქვამი ყველაფერი დანარჩენი — scale, ვარიანტები, პატარა CSS bundle და ის, რომ
+          AI კარგად წერს მას — სწორედ ამ ერთი ნაბიჯიდან გამომდინარეობს.
+        </p>
+      </div>
+      <div class="col-span-5 flex flex-col justify-end gap-px bg-rule">
+        <div class="bg-panel p-5"><p class="font-mono text-xs text-live">დასამახსოვრებელი</p><p class="mt-2">Utility კლასის blast radius ერთი ელემენტია.</p></div>
+        <div class="bg-panel p-5"><p class="font-mono text-xs text-live">დასამახსოვრებელი</p><p class="mt-2">Scale არის აზრი; ფრჩხილები — გამონაკლისი.</p></div>
+        <div class="bg-panel p-5"><p class="font-mono text-xs text-live">დასამახსოვრებელი</p><p class="mt-2">გამეორება არის კომპონენტი და არასდროს <code class="font-mono text-[13px]">@apply</code>.</p></div>
+        <div class="bg-panel p-5"><p class="font-mono text-xs text-live">დასამახსოვრებელი</p><p class="mt-2">CSS შეინახე keyframes-ისთვის, token-ებისთვის და იმ HTML-ისთვის, რომელიც შენი არაა.</p></div>
+      </div>
+    </div>
+
+    <div class="border-t border-rule pt-5 hidden">
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">ახლა კი დავალება</p>
+      <p class="mt-2 max-w-3xl text-lg">აირჩიე ერთი კომპონენტი ჩვენივე კოდბეისიდან. წაშალე მისი stylesheet. ხელახლა ააწყე template-ში მხოლოდ utility-ებით. ოცი წუთი — მერე გვერდიგვერდ გავხსნით ორივე ვერსიას და დავითვლით, რამდენ ფაილს შევეხეთ.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 21 ───────────────────────────────────────────────────────────── ინვერსიული -->
+<section class="slide h-full bg-ink text-paper" data-dark data-section="მადლობა" data-notes="ეს სლაიდი მთელი Q&A-ის განმავლობაში დატოვე გახსნილი. თუ არავინ იწყებს, ექვსი თემიდან ერთი თვითონ აიღე და ხმამაღლა უპასუხე — ეს დარბაზს თითქმის ყოველთვის ხსნის. პასუხის დროს O-თი ნებისმიერ სლაიდზე დაბრუნდები.">
+  <div class="flex h-full flex-col justify-between px-14 py-12"
+       style="background-image: radial-gradient(#e7eae91f 1px, transparent 1px); background-size: 16px 16px;">
+
+    <div class="flex items-start justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">
+      <span>ლექციის დასასრული</span>
+    </div>
+
+    <div>
+      <h2 class="display text-[6.5vw] leading-[1] font-semibold">გმადლობთ<br>ყურადღებისთვის.</h2>
+      <p class="mt-8 font-mono text-[clamp(1.1rem,2.4vw,2rem)] text-box-p">
+        კითხვები?<span class="caret ml-1 inline-block">_</span>
+      </p>
+      <p class="mt-6 max-w-xl text-paper/60">
+        ეს სლაიდი ინვერსიულია რასაც მხოლოდ კლასის შეცვლა დასჭირდა:
+        <code class="font-mono text-[13px] text-paper">bg-ink text-paper</code>.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-end justify-between gap-8 border-t border-paper/20 pt-6">
+      <div>
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ხშირად დასმული</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">HTML აღარ იკითხება</span>
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">ეს ხომ inline სტილებია</span>
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">bundle-ის ზომა</span>
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">dark mode</span>
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">Angular Material-თან ერთად</span>
+          <span class="border border-paper/30 px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-box-p hover:text-box-p">ძველი პროექტის მიგრაცია</span>
+        </div>
+      </div>
+      <div class="shrink-0 flex flex-col items-start gap-2">
+       
+        <a href="https://github.com/thothcher/tailwindCSS" target="_blank" rel="noopener"
+           class="mt-3 flex gap-2 items-center border border-paper/30 px-3 py-1.5 font-mono text-[12px] text-paper/80 transition-colors hover:border-box-p hover:text-box-p">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-paper/50">
+          <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.09 3.29 9.4 7.86 10.93.57.1.78-.25.78-.55 0-.27-.01-1.15-.02-2.09-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .3.21.66.79.55A10.51 10.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/>
+        </svg>
+         github.com/thothcher/tailwindCSS
+        </a>
+        <div class="mt-3 flex items-start justify-between gap-2 font-mono text-[11px] text-paper/45">
+          <span>git clone https://github.com/thothcher/tailwindCSS.git</span>
+          <button type="button" onclick="copyCloneCmd(this)"
+                  data-clone="git clone https://github.com/thothcher/tailwindCSS.git"
+                  class="shrink-0  p-1 text-paper/60 transition-colors  hover:text-box-p"
+                  aria-label="Copy git clone command" title="Copy">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer id="footerBar" class="fixed inset-x-0 bottom-0 z-40 flex h-11 items-center justify-between border-t border-rule bg-panel px-6 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">
+  <div class="flex items-center gap-4">
+    <span id="fSection" class="text-ink"></span>
+    <span class="text-rule">/</span>
+    <span id="fIndex"></span>
+  </div>
+  <div class="flex items-center gap-4">
+    <span class="hidden md:inline">viewport</span>
+    <span id="fWidth"></span>
+    <span id="fBp" class="border border-ink bg-ink px-2 py-0.5 text-paper">base</span>
+    <span class="text-rule">·</span>
+    <button id="btnNotes" class="hover:text-ink hidden">N ჩანაწერები</button>
+    <button id="btnXray" class="hover:text-ink">X x-ray</button>
+    <button id="btnGrid" class="hover:text-ink">O მიმოხილვა</button>
+  </div>
+</footer>
+
+<aside id="notes" class="fixed inset-x-0 bottom-11 z-40 hidden max-h-[38vh] overflow-auto border-t border-ink bg-ink px-6 py-5 text-paper">
+  <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ლექტორის ჩანაწერები</p>
+  <p id="notesBody" class="mt-2 max-w-4xl text-[15px] leading-relaxed"></p>
+</aside>
+
+<div id="overview" class="fixed inset-0 z-50 hidden overflow-auto bg-paper/97 p-10 backdrop-blur">
+  <div class="mb-6 flex items-end justify-between border-b border-rule pb-4">
+    <h2 class="display text-3xl font-semibold">ყველა სლაიდი</h2>
+    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-2">დააკლიკე გადასასვლელად · Esc დახურვისთვის</p>
+  </div>
+  <div id="overviewGrid" class="grid grid-cols-5 gap-px bg-rule"></div>
+</div>
+
+<div id="xray" class="pointer-events-none fixed z-50 hidden max-w-md border border-live bg-ink px-3 py-2 font-mono text-[12px] leading-relaxed text-box-p shadow-lg"></div>
+
+<div id="help" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/70 p-10">
+  <div class="w-full max-w-lg border border-ink bg-paper p-8">
+    <h2 class="display text-3xl font-semibold">კლავიშები</h2>
+    <dl class="mt-6 space-y-3 font-mono text-[13px]">
+      <div class="flex gap-4"><dt class="w-24 text-live">← → space</dt><dd class="text-ink-2">წინა / შემდეგი სლაიდი</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">home end</dt><dd class="text-ink-2">პირველი / ბოლო სლაიდი</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">O</dt><dd class="text-ink-2">ყველა სლაიდის მიმოხილვა</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">N</dt><dd class="text-ink-2">ამ სლაიდის ჩანაწერები</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">X</dt><dd class="text-ink-2">x-ray: კურსორით წაიკითხე კლასები</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">F</dt><dd class="text-ink-2">fullscreen</dd></div>
+      <div class="flex gap-4"><dt class="w-24 text-live">?</dt><dd class="text-ink-2">ეს პანელი</dd></div>
+    </dl>
+    <p class="mt-6 border-t border-rule pt-4 text-sm text-ink-2">URL-ში სლაიდის ნომერი ინახება, ასე რომ გვერდის გადატვირთვა ან ნებისმიერ სლაიდზე ბმულის გაზიარება შეგიძლია.</p>
+  </div>
+</div>
+
+<script>
+  function copyCloneCmd(btn) {
+    const text = btn.dataset.clone;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.innerHTML;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => { btn.innerHTML = original; }, 1200);
+    });
+  }
+</script>
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const bar = document.getElementById('bar');
+  const fSection = document.getElementById('fSection');
+  const fIndex = document.getElementById('fIndex');
+  const footer = document.getElementById('footerBar');
+  const fBp = document.getElementById('fBp');
+  const notes = document.getElementById('notes');
+  const notesBody = document.getElementById('notesBody');
+  const overview = document.getElementById('overview');
+  const help = document.getElementById('help');
+  let i = 0;
+
+  const titleOf = s => (s.querySelector('h1, h2')?.textContent || 'Slide').replace(/\s+/g, ' ').trim();
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('is-active', k === i));
+    const s = slides[i];
+    fSection.textContent = s.dataset.section || '';
+    fIndex.textContent = String(i + 1).padStart(2, '0') + ' / ' + slides.length;
+    notesBody.textContent = s.dataset.notes || 'ამ სლაიდზე ჩანაწერი არ არის.';
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (i + 1));
+
+    // inverted slides take the deck chrome with them
+    const dark = s.hasAttribute('data-dark');
+    const swap = (el, on, off) => { el.classList.add(...on); el.classList.remove(...off); };
+    swap(footer, dark ? ['bg-ink','text-paper/60','border-ink'] : ['bg-panel','text-ink-2','border-rule'],
+                 dark ? ['bg-panel','text-ink-2','border-rule'] : ['bg-ink','text-paper/60','border-ink']);
+    swap(fBp,    dark ? ['bg-paper','text-ink','border-paper'] : ['bg-ink','text-paper','border-ink'],
+                 dark ? ['bg-ink','text-paper','border-ink'] : ['bg-paper','text-ink','border-paper']);
+    swap(bar,    dark ? ['bg-paper'] : ['bg-ink'], dark ? ['bg-ink'] : ['bg-paper']);
+    swap(fSection, dark ? ['text-paper'] : ['text-ink'], dark ? ['text-ink'] : ['text-paper']);
+  }
+
+  // overview
+  document.getElementById('overviewGrid').innerHTML = slides.map((s, k) => `
+    <button data-go="${k}" class="bg-paper p-4 text-left hover:bg-ink hover:text-paper">
+      <span class="font-mono text-[11px] text-live">${String(k + 1).padStart(2, '0')}</span>
+      <span class="mt-2 block text-sm leading-snug">${titleOf(s)}</span>
+    </button>`).join('');
+  overview.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]');
+    if (b) { show(+b.dataset.go); overview.classList.add('hidden'); }
+    else if (e.target === overview) overview.classList.add('hidden');
+  });
+
+  const toggle = el => el.classList.toggle('hidden');
+  document.getElementById('btnNotes').onclick = () => toggle(notes);
+  document.getElementById('btnGrid').onclick  = () => toggle(overview);
+  document.getElementById('btnXray').onclick  = () => document.body.classList.toggle('xray');
+
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === ' ' || k === 'PageDown') { e.preventDefault(); show(i + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(slides.length - 1);
+    else if (k === 'n' || k === 'N') toggle(notes);
+    else if (k === 'o' || k === 'O') toggle(overview);
+    else if (k === 'x' || k === 'X') document.body.classList.toggle('xray');
+    else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (k === '?') help.classList.toggle('hidden'), help.classList.toggle('flex');
+    else if (k === 'Escape') { overview.classList.add('hidden'); help.classList.add('hidden'); help.classList.remove('flex'); document.body.classList.remove('xray'); }
+  });
+
+  // ── x-ray inspector ──────────────────────────────────────────────
+  const xray = document.getElementById('xray');
+  document.addEventListener('mousemove', e => {
+    if (!document.body.classList.contains('xray')) { xray.classList.add('hidden'); return; }
+    const el = e.target.closest('[class]');
+    if (!el || !el.className || typeof el.className !== 'string') { xray.classList.add('hidden'); return; }
+    xray.textContent = '<' + el.tagName.toLowerCase() + ' class="' + el.className.trim() + '">';
+    xray.classList.remove('hidden');
+    xray.style.left = Math.min(e.clientX + 16, innerWidth - xray.offsetWidth - 12) + 'px';
+    xray.style.top  = Math.min(e.clientY + 16, innerHeight - xray.offsetHeight - 12) + 'px';
+  });
+
+  // ── live labs ────────────────────────────────────────────────────
+  document.querySelectorAll('[data-lab]').forEach(lab => {
+    const target = lab.querySelector('[data-target]');
+    const out = lab.querySelector('[data-out]');
+    const base = target.dataset.base || '';
+    const state = {};
+    const btns = [...lab.querySelectorAll('[data-group]')];
+    btns.forEach(b => {
+      b.className = 'lab-btn border border-rule bg-panel px-3 py-1.5 font-mono text-[12px] transition-colors hover:border-ink';
+      if (b.hasAttribute('data-default')) state[b.dataset.group] = b.dataset.cls;
+      b.onclick = () => { state[b.dataset.group] = b.dataset.cls; render(); };
+    });
+    function render() {
+      const cls = (base + ' ' + Object.values(state).join(' ')).replace(/\s+/g, ' ').trim();
+      target.className = cls;
+      if (out) out.textContent = cls;
+      btns.forEach(b => {
+        const active = state[b.dataset.group] === b.dataset.cls;
+        b.classList.toggle('bg-ink', active);
+        b.classList.toggle('bg-panel', !active);
+        b.classList.toggle('text-paper', active);
+        b.classList.toggle('border-ink', active);
+        b.classList.toggle('border-rule', !active);
+      });
+    }
+    render();
+  });
+
+  // ── flip cards ───────────────────────────────────────────────────
+  document.querySelectorAll('[data-flip]').forEach(card => {
+    const flip = () => card.classList.toggle('is-flipped');
+    card.addEventListener('click', flip);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  });
+
+  // ── progressive build ────────────────────────────────────────────
+  document.querySelectorAll('[data-build]').forEach(box => {
+    const steps = JSON.parse(box.querySelector('[data-build-steps]').textContent);
+    const target = box.querySelector('[data-build-target]');
+    const code = box.querySelector('[data-build-code]');
+    const note = box.querySelector('[data-build-note]');
+    const idx = box.querySelector('[data-build-index]');
+    let s = 0;
+    const draw = () => {
+      target.className = steps[s].cls;
+      code.textContent = steps[s].cls || '(no classes yet)';
+      note.textContent = steps[s].note;
+      idx.textContent = 'ნაბიჯი ' + s + ' / ' + (steps.length - 1);
+    };
+    box.querySelector('[data-build-next]').onclick = () => { s = Math.min(steps.length - 1, s + 1); draw(); };
+    box.querySelector('[data-build-prev]').onclick = () => { s = Math.max(0, s - 1); draw(); };
+    draw();
+  });
+
+  // ── oklch palette (drag to mix, numbers move with the point) ──────
+  const oklchPad = document.getElementById('oklchPad');
+  if (oklchPad) {
+    const marker  = document.getElementById('oklchMarker');
+    const guideX  = document.getElementById('oklchGuideX');
+    const guideY  = document.getElementById('oklchGuideY');
+    const hueEl   = document.getElementById('oklchHue');
+    const swatch  = document.getElementById('oklchSwatch');
+    const outL    = document.getElementById('oklchOutL');
+    const outC    = document.getElementById('oklchOutC');
+    const outH    = document.getElementById('oklchOutH');
+    const C_MAX   = 0.37;
+    let L = 65, C = 0.19, H = 260;
+
+    function paint() {
+      const color = `oklch(${L}% ${C.toFixed(2)} ${H})`;
+      const left = (C / C_MAX * 100) + '%';
+      const top = (100 - L) + '%';
+      marker.style.left = left;
+      marker.style.top = top;
+      guideX.style.top = top;
+      guideY.style.left = left;
+      marker.style.background = color;
+      oklchPad.style.background = `linear-gradient(to top, black, transparent), linear-gradient(to right, white, transparent), oklch(65% 0.3 ${H})`;
+      swatch.style.background = color;
+      outL.textContent = L + '%';
+      outC.textContent = C.toFixed(2);
+      outH.textContent = H;
+    }
+
+    function setFromPad(clientX, clientY) {
+      const r = oklchPad.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      const y = Math.min(1, Math.max(0, (clientY - r.top) / r.height));
+      C = x * C_MAX;
+      L = Math.round((1 - y) * 100);
+      paint();
+    }
+
+    let dragging = false;
+    oklchPad.addEventListener('pointerdown', e => {
+      dragging = true;
+      oklchPad.setPointerCapture(e.pointerId);
+      marker.classList.add('scale-125');
+      setFromPad(e.clientX, e.clientY);
+    });
+    oklchPad.addEventListener('pointermove', e => { if (dragging) setFromPad(e.clientX, e.clientY); });
+    const stopDrag = () => { dragging = false; marker.classList.remove('scale-125'); };
+    oklchPad.addEventListener('pointerup', stopDrag);
+    oklchPad.addEventListener('pointercancel', stopDrag);
+
+    hueEl.addEventListener('input', () => { H = +hueEl.value; paint(); });
+
+    paint();
+  }
+
+  // ── responsive iframe demo ───────────────────────────────────────
+  const frame = document.getElementById('vpFrame');
+  if (frame) {
+    frame.srcdoc = `<!doctype html><html><head>
+      <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"><\/script>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600&display=swap" rel="stylesheet">
+      <style>body{margin:0;font-family:"Noto Sans Georgian",system-ui,sans-serif}</style></head>
+      <body class="bg-white text-neutral-900">
+        <div class="flex flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-8">
+          <div class="h-32 w-full shrink-0 bg-neutral-200 md:h-28 md:w-40">
+            <img src="https://images.unsplash.com/photo-1421789665209-c9b2a435e3dc?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="h-full w-full object-cover" alt="Tailwind CSS logotype">
+          </div>
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-widest text-blue-700">md:flex-row ერთვება 768px-ზე</p>
+            <h3 class="mt-1 text-lg font-semibold md:text-2xl">ჯერ ერთმანეთზე, მერე გვერდიგვერდ</h3>
+            <p class="mt-2 text-sm text-neutral-600 md:text-base">განსხვავება: რომელი პრეფიქსიანი კლასია აქტიური.</p>
+            <div class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <div class="bg-neutral-100 p-3 text-xs">grid-cols-1</div>
+              <div class="bg-neutral-100 p-3 text-xs">md:grid-cols-3</div>
+              <div class="bg-neutral-100 p-3 text-xs">media query არ დაგვიწერია</div>
+            </div>
+          </div>
+        </div>
+      </body></html>`;
+    const range = document.getElementById('vpRange');
+    const label = document.getElementById('vpLabel');
+    const badge = document.getElementById('vpBp');
+    const bpOf = w => w >= 1536 ? '2xl' : w >= 1280 ? 'xl' : w >= 1024 ? 'lg' : w >= 768 ? 'md' : w >= 640 ? 'sm' : 'base';
+    range.oninput = () => {
+      const w = +range.value;
+      frame.style.width = w + 'px';
+      label.textContent = w + 'px';
+      badge.textContent = bpOf(w);
+    };
+  }
+
+  // ── ambient breakpoint badge (real window) ───────────────────────
+  const fWidth = document.getElementById('fWidth');
+  const bp = w => w >= 1536 ? '2xl' : w >= 1280 ? 'xl' : w >= 1024 ? 'lg' : w >= 768 ? 'md' : w >= 640 ? 'sm' : 'base';
+  const sync = () => { fWidth.textContent = innerWidth + 'px'; fBp.textContent = bp(innerWidth); };
+  addEventListener('resize', sync); sync();
+
+  show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+})();
+</script>
+</body>
+</html>
