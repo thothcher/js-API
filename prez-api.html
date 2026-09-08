@@ -648,23 +648,18 @@
         <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
         <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js</p>
       </div>
-      <pre class="scroll min-h-[26rem] overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code data-cbuild-code><span class="cl" data-line="0"><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">getProducts</span>() {</span>
+      <pre class="scroll min-h-[26rem] overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.65] text-[#d4d4d4]"><code data-cbuild-code><span class="cl" data-line="0"><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">getProducts</span>() {</span>
 <span class="cl" data-line="5">  <span class="text-[#c586c0]">try</span> {</span>
 <span class="cl" data-line="1">    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {</span>
-<span class="cl" data-line="2">      <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY },</span>
+<span class="cl" data-line="2">      <span class="text-[#9cdcfe]">headers</span>: { <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY }</span>
 <span class="cl" data-line="1">    });</span>
-<span class="cl" data-line="4"></span>
-<span class="cl" data-line="4">    <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) {</span>
-<span class="cl" data-line="4">      <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`Request failed with status ${response.status}`</span>);</span>
-<span class="cl" data-line="4">    }</span>
-<span class="cl" data-line="3"></span>
+<span class="cl" data-line="4">    <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`HTTP ${response.status}`</span>);</span>
 <span class="cl" data-line="3">    <span class="text-[#569cd6]">const</span> resp_obj = <span class="text-[#569cd6]">await</span> response.<span class="text-[#dcdcaa]">json</span>();</span>
-<span class="cl" data-line="6"></span>
 <span class="cl" data-line="6">    <span class="text-[#dcdcaa]">renderProducts</span>(resp_obj.<span class="text-[#9cdcfe]">data</span>.<span class="text-[#9cdcfe]">products</span>);</span>
 <span class="cl" data-line="5">  } <span class="text-[#c586c0]">catch</span> (error) {</span>
-<span class="cl" data-line="5">    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Failed to load products:'</span>, error);</span>
+<span class="cl" data-line="5">    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Load failed:'</span>, error);</span>
 <span class="cl" data-line="5">    <span class="text-[#4ec9b0]">document</span>.<span class="text-[#dcdcaa]">getElementById</span>(<span class="text-[#ce9178]">'products'</span>).<span class="text-[#9cdcfe]">innerHTML</span> =</span>
-<span class="cl" data-line="5">      <span class="text-[#ce9178]">`&lt;p class="error"&gt;პროდუქტები ვერ ჩაიტვირთა.&lt;/p&gt;`</span>;</span>
+<span class="cl" data-line="5">      <span class="text-[#ce9178]">`&lt;p class="error"&gt;Error loading&lt;/p&gt;`</span>;</span>
 <span class="cl" data-line="5">  }</span>
 <span class="cl" data-line="0">}</span></code></pre>
 
