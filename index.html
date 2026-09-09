@@ -107,6 +107,34 @@
   .j-btn.is-on { border-bottom-color: #1e33e0; color: #1e33e0; }
   .j-line { display: block; opacity: .3; transition: opacity .25s, background-color .25s; }
   .j-line.is-on { opacity: 1; background: #1e33e01f; }
+
+  /* XSS fix — ასოები თითო-თითო ბრუნდება, რომ ცვლილება თვალით დაიჭირო */
+  @keyframes charIn {
+    from { opacity: 0; transform: rotateX(-90deg) translateY(-3px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .ch { display: inline-block; animation: charIn .34s cubic-bezier(.4,.1,.2,1) both; }
+  .mo { border-radius: 2px; transition: background-color .3s; }
+  .mo.is-safe { background: #8ad3a41f; }
+
+  /* ბანერი და ღილაკი ორ მდგომარეობაში — ფერები აქ წერია, არა runtime კლასებში */
+  #xssBanner { border-color: #b3352c66; background: #b3352c0d; }
+  #xssBanner.is-fixed { border-color: #2e7d4f66; background: #2e7d4f0d; }
+  #xssFix { border-color: #b3352c; color: #b3352c; }
+  #xssFix:hover { background: #b3352c; color: #e7eae9; }
+  #xssFix.is-fixed { border-color: #2e7d4f; color: #2e7d4f; }
+  #xssFix.is-fixed:hover { background: #2e7d4f; color: #e7eae9; }
+
+  /* escapeHtml დამხმარე — ჩნდება მხოლოდ გასწორების შემდეგ */
+  .xh { display: none; }
+  .xh.is-on { display: block; animation: xhIn .4s ease-out both; }
+  @keyframes xhIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch, .xh.is-on { animation: none; }
+  }
 </style>
 </head>
 
@@ -164,8 +192,8 @@
       <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">02</span><span>HTTP მოთხოვნის ანატომია: მეთოდი, URL, header, body</span></li>
       <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">03</span><span>GET · POST · PUT · PATCH · DELETE — და სტატუს კოდები</span></li>
       <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">04</span><span><code class="font-mono text-[13px]">fetch()</code>, Promise, <code class="font-mono text-[13px]">async / await</code> — ინტერაქციულად</span></li>
-      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">05</span><span>შეცდომების დამუშავება და ის ერთი ხაფანგი, რომელშიც ყველა ვვარდებით</span></li>
-      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">06</span><span>სრული CRUD dashboard — ჩვენივე <code class="font-mono text-[13px]">dashboard.js</code>-ის მიხედვით</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">05</span><span>შეცდომების დამუშავება და ის ერთი მახე, რომელშიც ყველა ვვარდებით</span></li>
+      <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">06</span><span>სრული CRUD — შექმნა, წაკითხვა, ცვლილება, წაშლა ერთ ეკრანზე</span></li>
       <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">07</span><span>API key, CORS, უსაფრთხოება — რა ჩანს ბრაუზერში</span></li>
       <li class="flex items-center gap-6 bg-paper p-4"><span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-live/30 bg-live/10 font-mono text-[11px] text-live">08</span><span>5 დავალება რეალური სცენარებით</span></li>
     </ol>
@@ -397,7 +425,7 @@
 <section class="slide h-full" data-section="მეთოდები" data-notes="დააჭირე თითოეულ მეთოდს და ხმამაღლა წაიკითხე ცხოვრებისეული მაგალითი — ეს რჩებათ ყველაზე კარგად. მთავარი კითხვა დარბაზს: რომელი მეთოდის ორჯერ გაშვება არის საშიში? პასუხი მხოლოდ POST-ია. აქედან გამომდინარეობს ყველა „ორმაგი გადახდის“ ბაგი მსოფლიოში.">
   <div class="grid h-full grid-cols-12 gap-10 px-14 py-12" id="methodLab">
     <div class="col-span-4 flex flex-col">
-      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ზმნები</p>
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>CRUD</p>
       <h2 class="display mt-3 text-5xl leading-[1] font-semibold">ოთხი ზმნა,<br>რომელიც<br>ყველაფერს ფარავს</h2>
 
       <div class="mt-8 grid gap-2">
@@ -408,7 +436,7 @@
       </div>
 
       <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
-        ამ ოთხს ერთად <b class="text-ink">CRUD</b> ჰქვია: Create, Read, Update, Delete.
+        ამ ოთხს ერთად შემოკლებით<b class="text-ink">CRUD</b> ჰქვია: Create, Read, Update, Delete.
       </div>
     </div>
 
@@ -448,7 +476,7 @@
         <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>პასუხი</p>
         <h2 class="display mt-3 text-5xl font-semibold">სტატუს კოდი — სამნიშნა პასუხი</h2>
       </div>
-      <p class="max-w-sm text-right text-sm text-ink-2">სერვერი ჯერ ერთი რიცხვით გპასუხობს და მხოლოდ მერე მონაცემებით. ეს რიცხვი უმეტესად უფრო მნიშვნელოვანია.</p>
+      <p class="max-w-sm text-right text-sm text-ink-2">სერვერი ჯერ რიცხვით გპასუხობს და მხოლოდ მერე მონაცემებით. ეს რიცხვი პრაქტიკული დანიშნულებისაა.</p>
     </div>
 
     <div class="mt-8 grid grid-cols-5 gap-px bg-rule text-center font-mono text-[12px] uppercase tracking-[0.12em]">
@@ -511,7 +539,7 @@
       <div class="mt-8 space-y-3">
         <div class="border border-rule bg-panel p-4">
           <p class="font-mono text-[13px] text-live">x-api-key</p>
-          <p class="mt-1 text-sm text-ink-2">„ვინ ხარ“. ღონისძიების სამაჯური — თუ ხელზე არ გაქვს, კარიბჭეს ვერ გაცდები.</p>
+          <p class="mt-1 text-sm text-ink-2">„ვინ ხარ“. ღონისძიების სამაჯური — თუ ხელზე არ გაქვს, კარს ვერ გაცდები.</p>
         </div>
         <div class="border border-rule bg-panel p-4">
           <p class="font-mono text-[13px] text-live">Content-Type: application/json</p>
@@ -535,7 +563,7 @@
 
 <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {
   <span class="text-[#9cdcfe]">headers</span>: {
-    <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY   <span class="italic text-[#6a9955]">// ← ეს ერთი ხაზი წყვეტს ყველაფერს</span>
+    <span class="text-[#ce9178]">'x-api-key'</span>: API_KEY   <span class="italic text-[#6a9955]">// ← ეს ერთი ხაზი ბევრს წყვეტს</span>
   },
 });</code></pre>
       </div>
@@ -585,8 +613,7 @@
       </div>
 
       <div class="mt-auto border border-rule bg-panel p-5 text-sm text-ink-2">
-        ყოველი API სხვანაირად ახვევს პასუხს. ზოგი პირდაპირ მასივს აბრუნებს (როგორც ჩვენი
-        <code class="font-mono text-[12px]">mockapi.io</code>), ზოგი — ობიექტში გახვეულს.
+        ყოველი API სხვანაირად ფუთავს პასუხს. ზოგი პირდაპირ მასივს აბრუნებს, ზოგი — ობიექტში გახვეულს.
         <b class="text-ink">პირველი, რასაც აკეთებ ახალ API-სთან: <code class="font-mono text-[12px]">console.log</code> პასუხისა.</b>
       </div>
     </div>
@@ -607,9 +634,9 @@
 <span data-j="0" class="j-line">}</span></code></pre>
 
       <div class="mt-5 grid grid-cols-3 gap-px bg-rule">
-        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">{ }</p><p class="mt-1 text-sm">ობიექტი — გასაღები: მნიშვნელობა</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">{ }</p><p class="mt-1 text-sm">ობიექტი — key: value</p></div>
         <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">[ ]</p><p class="mt-1 text-sm">მასივი — სია, რომელზეც <code class="font-mono text-[12px]">map</code> გადის</p></div>
-        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">" "</p><p class="mt-1 text-sm">JSON-ში გასაღები <b>ყოველთვის</b> ბრჭყალებშია</p></div>
+        <div class="bg-panel p-4"><p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">" "</p><p class="mt-1 text-sm">JSON-ში key <b>ყოველთვის</b> ბრჭყალებშია</p></div>
       </div>
     </div>
   </div>
@@ -661,7 +688,7 @@
       <script type="application/json" data-cbuild-steps>
       [
         {"note":"ნაბიჯი 0 — ცარიელი async ფუნქცია. სიტყვა async ერთადერთ რამეს აკეთებს: აძლევს უფლებას შიგნით await დაწერო."},
-        {"note":"ვგზავნით მოთხოვნას. await ნიშნავს „აქ დაელოდე პასუხს“. ამ დროს ბრაუზერი არ იყინება — სხვა კოდი მუშაობს."},
+        {"note":"ვაგზავნით მოთხოვნას. await ნიშნავს „აქ დაელოდე პასუხს“. ამ დროს ბრაუზერი არ იყინება — სხვა კოდი მუშაობს."},
         {"note":"ვამატებთ header-ს. ამის გარეშე ეს კონკრეტული API 401-ს დააბრუნებდა — მოთხოვნა მივიდოდა, მაგრამ უარით დაბრუნდებოდა."},
         {"note":"ტექსტს ობიექტად ვაქცევთ. .json() ისევ ლოდინია — სხეული შეიძლება ჯერ კიდევ მოდიოდეს, ამიტომ მასაც await სჭირდება."},
         {"note":"ყველაზე ხშირად გამოტოვებული ხაზი. fetch 404-ზე შეცდომას არ აგდებს — ჩვენ თვითონ უნდა შევამოწმოთ response.ok."},
@@ -782,7 +809,7 @@
 <span class="text-[#569cd6]">const</span> orders = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getOrders</span>(user.id);
 <span class="text-[#569cd6]">const</span> items  = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">getItems</span>(orders[<span class="text-[#b5cea8]">0</span>].id);
 <span class="italic text-[#6a9955]">// სამი ხაზი. სამივე იკითხება.</span></code></pre>
-          <p class="mt-4 text-sm text-ink-2">ჩვენს პროექტში <b class="text-ink">await</b> გვაქვს. სხვისი კოდი კი ხშირად <code class="font-mono text-[12px]">.then()</code>-ითაა — ორივე უნდა შეგეძლოს წაკითხვა.</p>
+          <p class="mt-4 text-sm text-ink-2">ჩვენს <b class="text-ink">await</b> გვაქვს. სხვას კოდი კი შეიძლება <code class="font-mono text-[12px]">.then()</code>-ით ეწეროს — ორივე წაკითხვა უნდა შეგეძლოს.</p>
         </div>
       </div>
     </div>
@@ -790,10 +817,10 @@
 </section>
 
 <!-- 14 ───────────────────────────────────────────────────────────── -->
-<section class="slide h-full" data-section="ხაფანგი" data-notes="აქ გააჩერე ლექცია. დაუსვი კითხვა, დაელოდე პასუხს, დაითვალე ხმები — და მხოლოდ მერე დააკლიკე ბარათს. ეს ერთი წუთი ყველაზე ღირებულია მთელ ლექციაში: fetch მხოლოდ მაშინ აგდებს შეცდომას, როცა სერვერამდე ვერ მიაღწია. 404 და 500 მისთვის წარმატებული პასუხებია.">
+<section class="slide h-full" data-section="მახე" data-notes="აქ გააჩერე ლექცია. დაუსვი კითხვა, დაელოდე პასუხს, დაითვალე ხმები — და მხოლოდ მერე დააკლიკე ბარათს. ეს ერთი წუთი ყველაზე ღირებულია მთელ ლექციაში: fetch მხოლოდ მაშინ აგდებს შეცდომას, როცა სერვერამდე ვერ მიაღწია. 404 და 500 მისთვის წარმატებული პასუხებია.">
   <div class="flex h-full flex-col px-14 py-12">
     <div class="flex flex-1 flex-col justify-center">
-      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>ხაფანგი #1</p>
+      <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>მახე #1</p>
       <h2 class="display mt-3 text-5xl font-semibold">სერვერმა 404 დააბრუნა. სად მოხვდება კოდი?</h2>
 
       <div class="mt-8 flip-card cursor-pointer select-none" data-flip tabindex="0" role="button" aria-label="დააკლიკე პასუხის სანახავად">
@@ -818,7 +845,7 @@
             </p>
             <p class="mt-3 text-lg leading-relaxed">
               404 და 500 <span class="text-[#8ad3a4]">წარმატებით მიღებული პასუხებია</span> — მოთხოვნა მივიდა, სერვერმა უპასუხა.
-              ის, რომ პასუხი ცუდია, HTTP-ის დონეზე პრობლემა არ არის.
+              ის, რომ პასუხი არგამოგვადგება, HTTP-ის დონეზე პრობლემა არ არის.
             </p>
             <div class="mt-5 border-t border-paper/20 pt-4">
               <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">ამიტომ ვწერთ ამ ორ ხაზს ყოველთვის</p>
@@ -847,7 +874,7 @@
 </section>
 
 <!-- 15 ───────────────────────────────────────────────────────────── -->
-<section class="slide h-full" data-section="შეცდომები" data-notes="აქ UX-ზეა საუბარი და არა სინტაქსზე. კითხვა დარბაზს: რას ხედავს მომხმარებელი, სანამ მონაცემები მოდის? თუ პასუხია „არაფერს“, ეს ბაგია. აჩვენე dashboard.js-ის showStatus — სამი მდგომარეობა უკვე გვაქვს, უბრალოდ სახელი უნდა დავარქვათ.">
+<section class="slide h-full" data-section="შეცდომები" data-notes="აქ UX-ზეა საუბარი და არა სინტაქსზე. კითხვა დარბაზს: რას ხედავს მომხმარებელი, სანამ მონაცემები მოდის? თუ პასუხია „არაფერს“, ეს ბაგია. აჩვენე showStatus-ის იდეა — სამი მდგომარეობა უკვე გვაქვს, უბრალოდ სახელი უნდა დავარქვათ.">
   <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
     <div class="col-span-5">
       <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>მდგომარეობები</p>
@@ -893,7 +920,7 @@
       <div class="flex flex-col bg-panel">
         <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
           <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
-          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js — უკვე გვაქვს, უბრალოდ სახელი დავარქვათ</p>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js</p>
         </div>
         <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">getCars</span>() {
   <span class="text-[#dcdcaa]">showStatus</span>(<span class="text-[#ce9178]">'იტვირთება…'</span>, <span class="text-[#ce9178]">'loading'</span>);        <span class="italic text-[#6a9955]">// 1 — მაშინვე</span>
@@ -913,7 +940,7 @@
       </div>
 
       <div class="border-l-2 border-del pl-5 text-ink-2">
-        <b class="text-ink">console.error მომხმარებლისთვის არ არის.</b> ის შენთვისაა. მომხმარებელს ეკრანზე უნდა ეწეროს — ქართულად, ადამიანურად, გამოსავლის შეთავაზებით.
+        <b class="text-ink">console.error მომხმარებლისთვის არ არის.</b> ის შენთვისაა, მაგრამ საჭიროა მომხარებელსაც გავაგებინოთ სიტუაციის შესახებ.
       </div>
     </div>
   </div>
@@ -941,12 +968,16 @@
         </div>
       </div>
 
-      <div class="mt-8 border border-del/40 bg-del/5 p-5">
+      <div id="xssBanner" class="mt-8 border p-5 transition-colors">
         <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-del">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
           ბონუსი, რომელიც კურსში არ წერია
         </p>
-        <p class="mt-2 text-sm">თუ <code class="font-mono text-[12px]">product.name</code> სერვერიდან მოდის და მასში <code class="font-mono text-[12px]">&lt;script&gt;</code> წერია, <code class="font-mono text-[12px]">innerHTML</code> მას <b>გაუშვებს</b>. ამას XSS ჰქვია. სასწავლო პროექტისთვის — ისწავლე, რომ არსებობს. რეალურისთვის — <code class="font-mono text-[12px]">textContent</code> ან escape.</p>
+        <p class="mt-2 text-sm">თუ <code class="font-mono text-[12px]">product.name</code> სერვერიდან მოდის და მასში <code class="font-mono text-[12px]">&lt;script&gt;</code> წერია, <code class="font-mono text-[12px]">innerHTML</code> მას <b>გაუშვებს</b>. ამას XSS ჰქვია. შეგიძლია — <code class="font-mono text-[12px]">textContent</code> ან escape გამოიყენო.</p>
+        <button id="xssFix" class="mt-4 flex items-center gap-2 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.15em] transition-colors">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span id="xssFixLabel">fix</span>
+        </button>
       </div>
     </div>
 
@@ -955,11 +986,14 @@
         <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
           <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js — renderProducts</p>
         </div>
-        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">function</span> <span class="text-[#dcdcaa]">renderProducts</span>(products) {
+        <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code id="xssCode"><span class="text-[#569cd6]">function</span> <span class="text-[#dcdcaa]">renderProducts</span>(products) {
+<span class="xh" id="xssHelper">  <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">escapeHtml</span> = (str) =&gt; <span class="text-[#4ec9b0]">String</span>(str)
+    .<span class="text-[#dcdcaa]">replaceAll</span>(<span class="text-[#ce9178]">'&lt;'</span>, <span class="text-[#ce9178]">'&amp;lt;'</span>)
+    .<span class="text-[#dcdcaa]">replaceAll</span>(<span class="text-[#ce9178]">'&gt;'</span>, <span class="text-[#ce9178]">'&amp;gt;'</span>);</span>
   <span class="text-[#569cd6]">const</span> html = products.<span class="text-[#dcdcaa]">map</span>(product =&gt; <span class="text-[#ce9178]">`</span>
     <span class="text-[#ce9178]">&lt;div class="product"&gt;</span>
-      <span class="text-[#ce9178]">&lt;img src="</span><span class="text-[#569cd6]">${</span>product.image<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">" alt="</span><span class="text-[#569cd6]">${</span>product.name<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">"&gt;</span>
-      <span class="text-[#ce9178]">&lt;h3&gt;</span><span class="text-[#569cd6]">${</span>product.name<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">&lt;/h3&gt;</span>
+      <span class="text-[#ce9178]">&lt;img src="</span><span class="text-[#569cd6]">${</span>product.image<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">" alt="</span><span class="text-[#569cd6]">${</span><span class="mo" data-raw="product.name" data-safe="escapeHtml(product.name)">product.name</span><span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">"&gt;</span>
+      <span class="text-[#ce9178]">&lt;h3&gt;</span><span class="text-[#569cd6]">${</span><span class="mo" data-raw="product.name" data-safe="escapeHtml(product.name)">product.name</span><span class="text-[#569cd6]">}</span><span class="text-[#ce9178]">&lt;/h3&gt;</span>
       <span class="text-[#ce9178]">&lt;p&gt;</span><span class="text-[#569cd6]">${</span>product.price<span class="text-[#569cd6]">}</span><span class="text-[#ce9178]"> ₾&lt;/p&gt;</span>
     <span class="text-[#ce9178]">&lt;/div&gt;</span>
   <span class="text-[#ce9178]">`</span>).<span class="text-[#dcdcaa]">join</span>(<span class="text-[#ce9178]">''</span>);
@@ -991,7 +1025,7 @@
   <div class="flex h-full flex-col px-14 py-12" id="liveLab">
     <div class="flex items-end justify-between border-b border-rule pb-4">
       <div>
-        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>ცოცხალი დემო</p>
+        <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>live დემო</p>
         <h2 class="display mt-3 text-5xl font-semibold">გავუშვათ ნამდვილი მოთხოვნა</h2>
       </div>
       <button id="liveSend" class="border border-ink bg-ink px-6 py-3 font-mono text-[13px] uppercase tracking-[0.15em] text-paper transition-colors hover:bg-live">▶ გაგზავნე</button>
@@ -1140,7 +1174,7 @@
     <div class="col-span-7 flex flex-col justify-center gap-5">
       <div class="flex flex-col bg-panel">
         <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
-          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js — createCar</p>
+          <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js — createCar</p>
         </div>
         <pre class="scroll overflow-auto bg-[#1e1e1e] p-5 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">createCar</span>(car) {
   <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(API_URL, {
@@ -1177,7 +1211,7 @@
       </div>
 
       <div class="border-l-2 border-del pl-5 text-ink-2">
-        <b class="text-ink">ხაფანგი #2:</b> <code class="font-mono text-[13px]">body</code> უნდა იყოს ტექსტი. თუ დაწერ <code class="font-mono text-[13px]">body: car</code>,
+        <b class="text-ink">მახე #2:</b> <code class="font-mono text-[13px]">body</code> უნდა იყოს ტექსტი. თუ დაწერ <code class="font-mono text-[13px]">body: car</code>,
         ბრაუზერი ობიექტს გადააქცევს სტრიქონად <code class="font-mono text-[13px]">"[object Object]"</code> და სერვერი 400-ს დააბრუნებს.
       </div>
     </div>
@@ -1199,7 +1233,7 @@
       <div class="flex min-h-0 flex-col bg-panel">
         <div class="border-b border-rule px-6 py-4">
           <p class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-put"><span class="h-1.5 w-1.5 rounded-full bg-put"></span>PUT · ჩანაცვლება</p>
-          <p class="mt-2 text-lg">გზავნი <b>სრულ</b> ობიექტს. სერვერი ძველს მთლიანად შეცვლის ახლით.</p>
+          <p class="mt-2 text-lg">გზავნი <b>სრულ</b> ობიექტს. სერვერი ძველს მთლიანად ცვლის ახლით.</p>
         </div>
         <pre class="overflow-auto bg-[#1e1e1e] p-5 font-mono text-[12.5px] leading-[1.85] text-[#d4d4d4]"><code><span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, {
   <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'PUT'</span>,
@@ -1246,18 +1280,21 @@
 </section>
 
 <!-- 21 ───────────────────────────────────────────────────────────── -->
-<section class="slide h-full" data-section="DELETE" data-notes="ეს ჩვენივე dashboard.js-ის ნამდვილი კოდია — არაფერი შემიცვლია. მიეცი დარბაზს 90 წამი და სთხოვე სამი პრობლემის პოვნა. მერე დააკლიკე. ეს ყველაზე ეფექტური სავარჯიშოა: საკუთარ კოდში ბაგის პოვნა უფრო მეტს ასწავლის, ვიდრე სწორი კოდის ჩვენება.">
+<section class="slide h-full" data-section="DELETE" data-notes="ეს კოდი მუშაობს — დავალება ნამდვილად იშლება. და მაინც სამი რამ არასწორია. მიეცი დარბაზს 90 წამი და სთხოვე სამივეს პოვნა, მერე დააკლიკე. მთავარია მეორე პრობლემა: სწორედ ის ქმნის „მოჩვენება-დავალებას“, რომელიც გვერდის განახლების შემდეგ ისევ ჩნდება. ყველას ჰქონია ეს ბაგი — უბრალოდ არ იცოდნენ, რომ catch იყო დამნაშავე.">
   <div class="grid h-full grid-cols-12 gap-8 px-14 py-12">
     <div class="col-span-4 flex flex-col">
       <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-del"><span class="h-1.5 w-1.5 rounded-full bg-del"></span>DELETE · სავარჯიშო</p>
       <h2 class="display mt-3 text-5xl leading-[1] font-semibold">იპოვე<br>სამი<br>პრობლემა</h2>
 
-      <p class="mt-6 leading-relaxed text-ink-2">
-        ეს ჩვენივე <code class="font-mono text-[13px]">dashboard.js</code>-ის ნამდვილი კოდია. ის მუშაობს — მანქანა ნამდვილად იშლება.
-        და მაინც სამი რამ არასწორია.
-      </p>
+      <div class="mt-6 border border-rule bg-panel p-5">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">სცენარი</p>
+        <p class="mt-2 text-[15px] leading-relaxed">
+          to-do აპლიკაცია. მომხმარებელი დავალების გვერდით ურნის ღილაკს აჭერს.
+          კოდი <b>მუშაობს</b> — დავალება ნამდვილად იშლება.
+        </p>
+      </div>
 
-      <div class="mt-8 border border-rule bg-panel p-5">
+      <div class="mt-6 border border-rule bg-panel p-5">
         <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">მინიშნებები</p>
         <ul class="mt-3 space-y-2 text-sm text-ink-2">
           <li>— რა თანმიმდევრობით სრულდება ხაზები?</li>
@@ -1277,45 +1314,50 @@
           <div class="flip-front">
             <div class="flex items-center gap-2 border-b border-[#2d2d2d] bg-[#252526] px-5 py-2.5">
               <span class="flex gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#ff5f56]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span><span class="h-2.5 w-2.5 rounded-full bg-[#27c93f]"></span></span>
-              <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">dashboard.js · deleteCar — დააკლიკე პასუხისთვის</p>
+              <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-[#969696]">app.js · deleteTask — დააკლიკე პასუხისთვის</p>
             </div>
-            <pre class="overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">deleteCar</span>(id) {
+            <pre class="overflow-auto bg-[#1e1e1e] p-6 font-mono text-[13px] leading-[1.9] text-[#d4d4d4]"><code><span class="text-[#569cd6]">const</span> <span class="text-[#4fc1ff]">API_URL</span> = <span class="text-[#ce9178]">'https://api.example.com/tasks'</span>;
+
+<span class="text-[#569cd6]">async function</span> <span class="text-[#dcdcaa]">deleteTask</span>(id) {
   <span class="text-[#c586c0]">try</span> {
-    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`https://…mockapi.io/cars/${id}`</span>, {
+    <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> <span class="text-[#dcdcaa]">fetch</span>(<span class="text-[#ce9178]">`https://api.example.com/tasks/${id}`</span>, {
       <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'DELETE'</span>,
     });
-    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">`Car ${id} deleted successfully.`</span>);
+    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">log</span>(<span class="text-[#ce9178]">`Task ${id} deleted successfully.`</span>);
 
     <span class="text-[#c586c0]">if</span> (!response.<span class="text-[#9cdcfe]">ok</span>) {
       <span class="text-[#c586c0]">throw new</span> <span class="text-[#4ec9b0]">Error</span>(<span class="text-[#ce9178]">`Request failed with status ${response.status}`</span>);
     }
   }
   <span class="text-[#c586c0]">catch</span> (error) {
-    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Failed to delete car:'</span>, error);
+    <span class="text-[#4ec9b0]">console</span>.<span class="text-[#dcdcaa]">error</span>(<span class="text-[#ce9178]">'Failed to delete task:'</span>, error);
   }
 }</code></pre>
           </div>
 
           <div class="flip-back border border-ink bg-ink p-7 text-paper">
-            <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">სამი პრობლემა</p>
+            <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">სამი პრობლემა · და რას ხედავს მომხმარებელი</p>
             <div class="mt-4 space-y-4">
               <div class="border-l-2 border-[#f2a2a2] pl-4">
                 <p class="font-medium">1. „deleted successfully“ იწერება შემოწმებამდე</p>
                 <p class="mt-1 text-sm text-paper/70">console.log ერთი ხაზით ადრეა. 404-ის შემთხვევაშიც კონსოლში „წარმატებით წაიშალა“ გვიწერია. ის უნდა ჩამოვიდეს <code class="font-mono">if</code>-ის ქვემოთ.</p>
+                <p class="mt-1 text-sm text-[#f0c674]">მომხმარებელი ხედავს: მწვანე შეტყობინებას „დავალება წაიშალა“ — მაშინაც, როცა არაფერი წაშლილა.</p>
               </div>
               <div class="border-l-2 border-[#f2a2a2] pl-4">
                 <p class="font-medium">2. catch შეცდომას „ჭამს“</p>
-                <p class="mt-1 text-sm text-paper/70">throw ხდება, მაგრამ იქვე იჭერს ადგილობრივი catch. გამომძახებელი ვერაფერს გაიგებს — <code class="font-mono">getCars()</code> გაეშვება ისე, თითქოს ყველაფერი კარგადაა, და მომხმარებელი <b>შეცდომას ვერ ნახავს</b>.</p>
+                <p class="mt-1 text-sm text-paper/70">throw ხდება, მაგრამ იქვე იჭერს ადგილობრივი catch. გამომძახებელი ვერაფერს გაიგებს — სია განახლდება ისე, თითქოს ყველაფერი კარგადაა.</p>
+                <p class="mt-1 text-sm text-[#f0c674]">მომხმარებელი ხედავს: დავალება ეკრანიდან ქრება — მაგრამ სერვერზე რჩება. გვერდის განახლების შემდეგ ის <b>ისევ ჩნდება</b>.</p>
                 <p class="mt-1 text-sm text-[#8ad3a4]">გამოსავალი: აქ საერთოდ არ დაიჭირო — გამომძახებელს უკვე აქვს თავისი try/catch.</p>
               </div>
               <div class="border-l-2 border-[#f2a2a2] pl-4">
                 <p class="font-medium">3. მისამართი ხელახლა წერია</p>
                 <p class="mt-1 text-sm text-paper/70">ფაილის თავში უკვე გვაქვს <code class="font-mono">API_URL</code>. ორი წყარო ერთი ჭეშმარიტებისთვის — დომენის შეცვლისას ერთს დაივიწყებ.</p>
+                <p class="mt-1 text-sm text-[#f0c674]">მომხმარებელი ხედავს: ყველაფერი მუშაობს, გარდა წაშლისა — და ვერავინ ხვდება რატომ.</p>
               </div>
             </div>
             <div class="mt-5 border-t border-paper/20 pt-4">
               <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/50">გასწორებული</p>
-              <pre class="mt-2 font-mono text-[12.5px] leading-[1.8] text-[#8ad3a4]"><code><span class="text-[#569cd6]">async function</span> deleteCar(id) {
+              <pre class="mt-2 font-mono text-[12.5px] leading-[1.8] text-[#8ad3a4]"><code><span class="text-[#569cd6]">async function</span> deleteTask(id) {
   <span class="text-[#569cd6]">const</span> response = <span class="text-[#569cd6]">await</span> fetch(<span class="text-[#ce9178]">`${API_URL}/${id}`</span>, { method: <span class="text-[#ce9178]">'DELETE'</span> });
   <span class="text-[#c586c0]">if</span> (!response.ok) <span class="text-[#c586c0]">throw new</span> Error(response.status);
 }</code></pre>
@@ -1425,7 +1467,7 @@
       <div class="border border-del/40 bg-del/5 p-6">
         <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">რას ნიშნავს ეს პრაქტიკულად</p>
         <p class="mt-3 leading-relaxed">
-          ჩვენი <code class="font-mono text-[13px]">API_KEY</code> სასწავლო გასაღებია — ის სასწავლო მონაცემებს ეკუთვნის და ამიტომ არაფერი ეშინია.
+          ჩვენი <code class="font-mono text-[13px]">API_KEY</code> სასწავლო გასაღებია — ის სასწავლო მონაცემებს ეკუთვნის და ამიტომ არაფერი საშიში.
           მაგრამ იგივე ხაზი გადახდის სისტემის გასაღებით ნიშნავს, რომ <b>ნებისმიერს</b> შეუძლია შენი სახელით ფული დახარჯოს.
         </p>
       </div>
@@ -1832,8 +1874,8 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
             <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-del">დავალება 04 · რეფაქტორინგი</span>
             <span class="border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-2">20 წუთი</span>
           </div>
-          <h3 class="display mt-2 text-2xl font-semibold">გაასწორე <code class="font-mono text-xl">deleteCar</code></h3>
-          <p class="mt-2 text-sm text-ink-2">სცენარი: მომხმარებელმა „Delete“ დააჭირა, ინტერნეტი გაწყდა, მანქანა ეკრანიდან გაქრა — მაგრამ სერვერზე დარჩა. მეორე დღეს ისევ იქ არის.</p>
+          <h3 class="display mt-2 text-2xl font-semibold">გაასწორე <code class="font-mono text-xl">deleteTask</code></h3>
+          <p class="mt-2 text-sm text-ink-2">სცენარი: მომხმარებელმა წაშლის ღილაკს დააჭირა, ინტერნეტი გაწყდა, დავალება ეკრანიდან გაქრა — მაგრამ სერვერზე დარჩა. გვერდის განახლების შემდეგ ისევ იქ არის.</p>
           <ul class="mt-3 space-y-1 text-sm">
             <li>— გაასწორე სამივე პრობლემა 21-ე სლაიდიდან</li>
             <li>— წარუმატებელი წაშლა მომხმარებელს <b>ეკრანზე</b> უნდა ეუბნებოდეს</li>
@@ -1887,7 +1929,7 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
   <div class="grid h-full grid-cols-12 gap-10 px-14 py-12">
     <div class="col-span-6 flex flex-col justify-center">
       <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-live"><span class="h-1.5 w-1.5 rounded-full bg-live"></span>შეჯამება</p>
-      <h2 class="display mt-6 text-[4vw] leading-[1.1] font-semibold">API-ს გამოყენება<br>არის ერთი კითხვის<br>ოთხჯერ დასმა.</h2>
+      <h2 class="display mt-6 text-[4vw] leading-[1.1] font-semibold">API</h2>
       <div class="mt-8 h-px w-32 bg-live/40"></div>
       <p class="mt-8 max-w-lg text-lg leading-relaxed text-ink-2">
         რას ვითხოვ? სად? როგორ გავიგებ, რომ გამოვიდა? და რას ვაჩვენებ, თუ არ გამოვიდა?
@@ -1938,10 +1980,7 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
         <li class="bg-ink p-4 text-[15px]">pagination: როცა 10 000 ჩანაწერია</li>
         <li class="bg-ink p-4 text-[15px]">როგორ ვტესტოთ კოდი, რომელიც ქსელს ელოდება</li>
       </ul>
-      <p class="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-paper/40">
-        <kbd class="border border-paper/30 px-1.5 py-0.5">O</kbd> — ყველა სლაიდი ·
-        <kbd class="border border-paper/30 px-1.5 py-0.5">?</kbd> — კლავიშები
-      </p>
+   
     </div>
   </div>
 </section>
@@ -1958,9 +1997,9 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
     <span class="hidden md:inline">ქსელი</span>
     <span id="fNet" class="border border-ink bg-ink px-2 py-0.5 text-paper">online</span>
     <span class="text-rule">·</span>
-    <button id="btnNotes" class="hover:text-ink">N ჩანაწერები</button>
-    <button id="btnXray" class="hover:text-ink">X x-ray</button>
-    <button id="btnGrid" class="hover:text-ink">O მიმოხილვა</button>
+    <button id="btnNotes" class="hover:text-ink hidden">N ჩანაწერები</button>
+    <button id="btnXray" class="hover:text-ink hidden">X x-ray</button>
+    <button id="btnGrid" class="hover:text-ink hidden">O მიმოხილვა</button>
   </div>
 </footer>
 
@@ -2404,6 +2443,44 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
   addEventListener('online', syncNet);
   addEventListener('offline', syncNet);
   syncNet();
+
+  // ── 16 · XSS გასწორება ───────────────────────────────────────────
+  const xssBtn = document.getElementById('xssFix');
+  if (xssBtn) {
+    const morphs = [...document.querySelectorAll('#xssCode .mo')];
+    const helper = document.getElementById('xssHelper');
+    const banner = document.getElementById('xssBanner');
+    const label  = document.getElementById('xssFixLabel');
+    let fixed = false;
+
+    // ტექსტი ასოებად იშლება, თითოეულს თავისი დაყოვნება აქვს — ტალღის ეფექტი
+    const paint = (el, text) => {
+      el.textContent = '';
+      [...text].forEach((chr, k) => {
+        const sp = document.createElement('span');
+        sp.className = 'ch';
+        sp.style.animationDelay = (k * 20) + 'ms';
+        sp.textContent = chr;
+        el.appendChild(sp);
+      });
+    };
+
+    xssBtn.onclick = () => {
+      fixed = !fixed;
+
+      morphs.forEach(m => {
+        paint(m, fixed ? m.dataset.safe : m.dataset.raw);
+        m.classList.toggle('is-safe', fixed);
+        m.style.color = fixed ? '#8ad3a4' : '';
+      });
+
+      helper.classList.toggle('is-on', fixed);
+      label.textContent = fixed ? 'undo' : 'fix';
+
+      banner.classList.toggle('is-fixed', fixed);
+      xssBtn.classList.toggle('is-fixed', fixed);
+    };
+  }
 
   show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1));
 })();
