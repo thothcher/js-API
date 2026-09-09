@@ -1980,12 +1980,42 @@ searchInput.<span class="text-[#dcdcaa]">addEventListener</span>(<span class="te
         <li class="bg-ink p-4 text-[15px]">pagination: როცა 10 000 ჩანაწერია</li>
         <li class="bg-ink p-4 text-[15px]">როგორ ვტესტოთ კოდი, რომელიც ქსელს ელოდება</li>
       </ul>
-   
+
+      <div class="mt-8 shrink-0 flex flex-col items-start gap-2">
+
+        <a href="https://github.com/thothcher/js-API" target="_blank" rel="noopener"
+           class="mt-3 flex gap-2 items-center border border-paper/30 px-3 py-1.5 font-mono text-[12px] text-paper/80 transition-colors hover:border-box-p hover:text-box-p">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-paper/50">
+          <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.09 3.29 9.4 7.86 10.93.57.1.78-.25.78-.55 0-.27-.01-1.15-.02-2.09-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .3.21.66.79.55A10.51 10.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/>
+        </svg>
+         github.com/thothcher/js-API
+        </a>
+        <div class="mt-3 flex items-start justify-between gap-2 font-mono text-[11px] text-paper/45">
+          <span>git clone https://github.com/thothcher/js-API.git</span>
+          <button type="button" onclick="copyCloneCmd(this)"
+                  data-clone="git clone https://github.com/thothcher/js-API.git"
+                  class="shrink-0  p-1 text-paper/60 transition-colors  hover:text-box-p"
+                  aria-label="Copy git clone command" title="Copy">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 </main>
+<script>
+  function copyCloneCmd(btn) {
+    const text = btn.dataset.clone;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.innerHTML;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => { btn.innerHTML = original; }, 1200);
+    });
+  }
+</script>
+
 
 <footer id="footerBar" class="fixed inset-x-0 bottom-0 z-40 flex h-11 items-center justify-between border-t border-rule bg-panel px-6 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">
   <div class="flex items-center gap-4">
